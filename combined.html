@@ -65,11 +65,6 @@
             }
         });
 
-        function buckConverterDynamics(i_L, v_C, q) {
-            const di_L_dt = (V_in * q - v_C) / L;
-            const dv_C_dt = (i_L - v_C / R_load) / C;
-            return [di_L_dt, dv_C_dt];
-        }
 
         function draw_plot() {
             ctx.clearRect(0, 0, plot_canvas.width, plot_canvas.height);
@@ -106,23 +101,23 @@
 
             if (!breakSimulation) {
                 if (automatic_mode) { //swithces q automaticcally
-                    if (counter > 20){ 
+                    if (counter > 30){ 
                         q = 1-q; 
                         counter = 0;
                     }
                     counter = counter+1;
                 }
 				
-				const [di_L_dt, dv_C_dt] = buckConverterDynamics(i_L, v_C, q);
 
+                const di_L_dt = (V_in * q - v_C) / L;
+                const dv_C_dt = (i_L - v_C / R_load) / C;
                 // Euler-Verfahren zur Lösung der DGLs
-                
 				i_L += di_L_dt * dt;
                 v_C += dv_C_dt * dt;
 				if (i_L < 0){ //spulenstrom kann nicht kleiner als 0 werden, wegen Diode
 					i_L = 0;
 				}
-				i_C = 1/C*dv_C_dt/dt
+				i_C = C*dv_C_dt
 				
                 // Gesamtzeit aktualisieren
                 t_total += dt;
@@ -145,68 +140,86 @@
 		let kondensatorStrom = 0; // In Amperes
         let voltage = 1; // In Volts
 
-        // Dot properties
-        const dotRadius = 3;
-        const dotColor = 'yellow';
-
-        // Distance between dots is inversely proportional to voltage
-        function getDotSpacing(voltage) {
-            return 50 / voltage;
-        }
-
-        // Function to draw a wire
-        function drawWire(startX, startY, endX, endY) {
-            ctx2.beginPath();
-            ctx2.lineWidth = 5;
-            ctx2.moveTo(startX, startY);
-            ctx2.lineTo(endX, endY);
-            ctx2.strokeStyle = 'black';
-            ctx2.stroke();
-        }
-
-        // Function to draw the moving dots along a wire
-        function drawDots(startX, startY, endX, endY, current, voltage) {
-            const dotSpacing = getDotSpacing(voltage);
-            const dotSpeed = current * 2; // Speed of the dots, proportional to current
-            const time = Date.now() / 1000; // Get current time in seconds
-
-            const dx = endX - startX;
-            const dy = endY - startY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const angle = Math.atan2(dy, dx);
-
-            for (let d = (time * dotSpeed) % dotSpacing; d < distance; d += dotSpacing) {
-                const x = startX + Math.cos(angle) * d;
-                const y = startY + Math.sin(angle) * d;
+        class Wire{
+            constructor(startX, startY, endX, endY,knots){
+                this.startX = startX;
+                this.startY = startY;
+                this.endX = endX;
+                this.endY = endY;
+                this.knots = knots;
+            }
+            
+            // Function to draw a wire
+            drawWire() {
                 ctx2.beginPath();
-                ctx2.arc(x, y, dotRadius, 0, 2 * Math.PI);
-                ctx2.fillStyle = dotColor;
+                ctx2.lineWidth = 5;
+                ctx2.moveTo(this.startX, this.startY);
+                ctx2.lineTo(this.endX, this.endY);
+                ctx2.strokeStyle = 'black';
+                ctx2.stroke();
+            }
+            drawWire_(startX,startY,endX,endY) {
+                ctx2.beginPath();
+                ctx2.lineWidth = 5;
+                ctx2.moveTo(startX, startY);
+                ctx2.lineTo(endX, endY);
+                ctx2.strokeStyle = 'black';
+                ctx2.stroke();
+            }
+            // Distance between dots is inversely proportional to voltage
+            getDotSpacing(voltage) {
+                return 50 / voltage;
+            }
+            // Function to draw the moving dots along a wire
+            drawDots = function (){
+                let dotRadius = 3;
+                let dotColor = 'yellow';
+                let integralCurrent = 0;
+                return function (current, voltage) {
+                    const dotSpacing = this.getDotSpacing(voltage);
+                    integralCurrent += current;
+                    integralCurrent = integralCurrent/voltage;
+                    const dotSpeed = integralCurrent; // Speed of the dots, proportional to current
+                    const time = Date.now() / 1000; // Get current time in seconds
+
+                    const dx = this.endX - this.startX;
+                    const dy = this.endY - this.startY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const angle = Math.atan2(dy, dx);
+
+                    for (let d = (dotSpeed) % dotSpacing; d < distance; d += dotSpacing) {
+                        const x = this.startX + Math.cos(angle) * d;
+                        const y = this.startY + Math.sin(angle) * d;
+                        ctx2.beginPath();
+                        ctx2.arc(x, y, dotRadius, 0, 2 * Math.PI);
+                        ctx2.fillStyle = dotColor;
+                        ctx2.fill();
+                    }
+                }
+            }()
+            drawKnot(x, y) {
+                const knotRadius = 5;
+                ctx2.beginPath();
+                ctx2.arc(x, y, knotRadius, 0, 2 * Math.PI);
+                ctx2.fillStyle = 'black';
                 ctx2.fill();
             }
-        }
-
-        function drawKnot(x, y) {
-            const knotRadius = 5;
-            ctx2.beginPath();
-            ctx2.arc(x, y, knotRadius, 0, 2 * Math.PI);
-            ctx2.fillStyle = 'black';
-            ctx2.fill();
-        }
-        // Function to create a wire with moving dots
-        function createWire(startX, startY, endX, endY, current, voltage,knots) {
-            drawWire(startX, startY, endX, endY);
-            drawDots(startX, startY, endX, endY, current, voltage);
-            if (knots){
-                drawKnot(startX, startY);
-                drawKnot(endX, endY);
+            // Function to create a wire with moving dots
+            createWire(current, voltage) {
+                this.drawWire();
+                this.drawDots(current, voltage);
+                if (this.knots){
+                    this.drawKnot(this.startX, this.startY);
+                    this.drawKnot(this.endX, this.endY);
+                }
             }
         }
-
         function createDiode(startX, startY) {
-            drawWire(startX-25, startY, startX+25, startY); //horizontal
-            drawWire(startX-25, startY+50, startX, startY);
-            drawWire(startX+25, startY+50, startX, startY);
-            drawWire(startX-25, startY+50, startX+25, startY+50);
+            diode = new Wire(startX-25, startY, startX+25, startY);
+            diode.drawWire_(startX-25, startY, startX+25, startY); //horizontal
+            diode.drawWire_(startX-25, startY+50, startX, startY);
+            diode.drawWire_(startX+25, startY+50, startX, startY);
+            diode.drawWire_(startX-25, startY+50, startX+25, startY+50);
         }
 
         function drawMagneticField(startX, startY, endX, endY, scalingFactor) {
@@ -219,7 +232,7 @@
             const loopSpacing = totalLength / (loops * 2); // Space for each half loop
 
             let currentX = startX;
-            console.log(scalingFactor);
+            scalingFactor = scalingFactor*2
 
             for (let i = 0; i < loops; i++) {
                 // Draw magnetic field lines around each loop
@@ -231,13 +244,6 @@
                         currentX + offset - loopSpacing, startY - loopSpacing * 2, 
                         currentX + offset + loopSpacing, startY - loopSpacing * 2, 
                         currentX + offset + loopSpacing, startY - loopSpacing
-                    );
-                    // Bottom part of the loop
-                    ctx2.moveTo(currentX + offset, startY + loopSpacing);
-                    ctx2.bezierCurveTo(
-                        currentX + offset - loopSpacing, startY + loopSpacing * 2, 
-                        currentX + offset + loopSpacing, startY + loopSpacing * 2, 
-                        currentX + offset + loopSpacing, startY + loopSpacing
                     );
                 }
                 currentX += loopSpacing * 2;
@@ -278,42 +284,66 @@
                 shiftX = 5;
                 knots = false;
             }
-            createWire(startX, startY, startX+50-shiftX, startY-shiftY, current, voltage, knots)
+            mySwitch = new Wire(startX, startY, startX+50-shiftX, startY-shiftY, knots);
+            mySwitch.createWire(current, voltage);
 
         }
 	
 
         // Update function to redraw all wires and dots
+        wire1 = new Wire(50, 50, 100, 50, true);
+        wire2 = new Wire(150, 50, 250, 50, true);
+        wire3 = new Wire(50, 350, 50, 50, true);
+        wire4 = new Wire(250, 350, 50, 350, true);
+        //Diodenstrang
+        wire5 = new Wire(250, 150, 250, 50, true);
+        wire6 = new Wire(250, 350, 250, 150, true);
+        //createDiode()
+        //
+        
+        //Kondensatorstrang
+        wire8 = new Wire(450, 350, 450, 50, true);
+        //Spulenstrang
+        wire9 = new Wire(250, 50, 320, 50, true);
+        wire10 = new Wire(400, 50, 450, 50, true);
+        wire11 = new Wire(450, 50, 550, 50, true);
+        //drawinductor()
+        wire7 = new Wire(450, 50, 550, 50, true);
+        wire12 = new Wire(550, 350, 450, 350, true);
+        wire13 = new Wire(550, 50, 550, 350, true);
+        wire14 = new Wire(450, 350, 250, 350, true);
+
         function update() {
             ctx2.clearRect(0, 0, cirquit_canvas.width, cirquit_canvas.height); // Clear canvas
-			
-			
-			spulenStrom += i_L/1000000000;
-			kondensatorStrom += i_C/10000000000000000000;
+			const conversion_factor = 2;
+			spulenStrom = i_L*conversion_factor;
+			kondensatorStrom = i_C*conversion_factor;
 			lastStrom = spulenStrom - kondensatorStrom;
-			let kondensatorSpanung = 1 + v_C/10;
-            console.log(spulenStrom);
+			let kondensatorSpanung = voltage + v_C/10;
+            //console.log(spulenStrom); //debug
             //Schalterstrang
             createSwitch(100,50,q, spulenStrom*q, voltage);
-            createWire(50, 50, 100, 50, spulenStrom*q, voltage,true); // oben links
-            createWire(150, 50, 250, 50, spulenStrom*q, voltage,true); // oben links
-            createWire(50, 350, 50, 50, spulenStrom*q, voltage,true); // links links
-            createWire(250, 350, 50, 350, spulenStrom*q, voltage,true); // unten links
+            //
+            wire1.createWire(spulenStrom*q, voltage);
+            wire2.createWire(spulenStrom*q, voltage); // oben links
+            wire3.createWire(spulenStrom*q, voltage); // links links
+            wire4.createWire(spulenStrom*q, voltage); // unten links
             //Diosenstrang
-            createWire(250, 150, 250, 50, spulenStrom*(1-q), voltage,true); // oben
-            createWire(250, 350, 250, 150, spulenStrom*(1-q), voltage,true); // unten
+            wire5.createWire(spulenStrom*(1-q), voltage); // oben
+            wire6.createWire(spulenStrom*(1-q), voltage); // unten
             createDiode(250, 150);
             //
-			createWire(450, 350, 250, 350, spulenStrom, voltage,true); // unten mitte
+			
             //Kondensatorstrang
-			createWire(450, 50, 450, 350, kondensatorStrom, kondensatorSpanung,true); // mitte rechts
+			wire8.createWire(-kondensatorStrom, kondensatorSpanung); // mitte rechts
             //Spulenstrang
-			createWire(250, 50, 320, 50, spulenStrom, voltage,true); // oben mitte
-            createWire(400, 50, 450, 50, spulenStrom, voltage,true); // oben mitte
+			wire9.createWire(spulenStrom, voltage); // oben mitte
+            wire10.createWire(spulenStrom, voltage); // oben mitte
             drawInductor(320, 50, 400, 50, spulenStrom);
-			createWire(450, 50, 550, 50, lastStrom, voltage,true); // Last oben
-			createWire(550, 50, 550, 350, lastStrom, voltage,true); // Last oben
-			createWire(550, 350, 450, 350, lastStrom, voltage,true); // Last oben
+            wire7.createWire(lastStrom, voltage); // unten mitte
+			wire12.createWire(lastStrom, voltage); // Last oben
+			wire13.createWire(lastStrom, voltage); // Last oben
+			wire14.createWire(spulenStrom, voltage); // Last oben
 
             
 			
