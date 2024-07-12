@@ -11,7 +11,11 @@
     </style>
 </head>
 <body>
-	<canvas id="canvas" width="800" height="400"></canvas>
+	<div>
+        <label for="automatic_mode">Automatic-Mode: </label>
+        <input type="checkbox" id="automatic_mode" checked>
+    </div>
+    <canvas id="cirquit_canvas" width="800" height="400"></canvas>
     <div>
         <label for="currentInput">Current (A): </label>
         <input type="number" id="currentInput" value="1" step="0.1">
@@ -21,6 +25,7 @@
     <div id="coordinates">Coordinates: (0, 0)</div>
     <canvas id="plot" width="800" height="600"></canvas>
     <script>
+        //----------------------------Differenzialgleichung---------------------------------
         // Parameter
         const V_in = 20; // Eingangsspannung in Volt
         const L = 99e-3; // Induktivität in Henry
@@ -38,10 +43,11 @@
         let stopSimulation = false; // Flag to stop the simulation
         let breakSimulation = false; // Flag to break the simulation
 		let counter = 0;
+        let automatic_mode = true; // Automatic mode flag
 
         // Canvas setup
-        const canvas = document.getElementById('plot');
-        const ctx = canvas.getContext('2d');
+        const plot_canvas = document.getElementById('plot');
+        const ctx = plot_canvas.getContext('2d');
 
         let t_total = 0; // Gesamtzeit
         const t_data = [];
@@ -65,29 +71,29 @@
             return [di_L_dt, dv_C_dt];
         }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        function draw_plot() {
+            ctx.clearRect(0, 0, plot_canvas.width, plot_canvas.height);
 
             const margin = 50;
-            const graphWidth = canvas.width - 2 * margin;
-            const graphHeight = (canvas.height - 4 * margin) / 3;
+            const graphWidth = plot_canvas.width - 2 * margin;
+            const graphHeight = (plot_canvas.height - 4 * margin) / 3;
 
             // Helper function to plot a graph
             function plotGraph(data, title, yLabel, yMin, yMax, yOffset) {
                 ctx.beginPath();
-                ctx.moveTo(margin, canvas.height - margin - yOffset);
+                ctx.moveTo(margin, plot_canvas.height - margin - yOffset);
 
                 data.forEach((point, index) => {
                     const x = margin + (graphWidth * index) / (data.length - 1);
-                    const y = canvas.height - margin - yOffset - ((graphHeight * (point - yMin)) / (yMax - yMin));
+                    const y = plot_canvas.height - margin - yOffset - ((graphHeight * (point - yMin)) / (yMax - yMin));
                     ctx.lineTo(x, y);
                 });
 
                 ctx.stroke();
 
                 // Draw labels and title
-                ctx.fillText(title, margin, canvas.height - margin - yOffset - graphHeight - 10);
-                ctx.fillText(yLabel, 10, canvas.height - margin - yOffset - graphHeight / 2);
+                ctx.fillText(title, margin, plot_canvas.height - margin - yOffset - graphHeight - 10);
+                ctx.fillText(yLabel, 10, plot_canvas.height - margin - yOffset - graphHeight / 2);
             }
 
             plotGraph(q_data, 'Schaltzustand q(t)', 'Zustand (0 oder 1)', 0, 1, 0);
@@ -99,11 +105,13 @@
             if (stopSimulation) return;
 
             if (!breakSimulation) {
-                if (counter > 20){ //automatisches Schalten
-					//q = 1-q; //auskommenrieren für manuellen betrieb
-					counter = 0;
-				}
-				counter = counter+1;
+                if (automatic_mode) { //swithces q automaticcally
+                    if (counter > 20){ 
+                        q = 1-q; 
+                        counter = 0;
+                    }
+                    counter = counter+1;
+                }
 				
 				const [di_L_dt, dv_C_dt] = buckConverterDynamics(i_L, v_C, q);
 
@@ -125,12 +133,12 @@
                 vC_data.push(v_C);
                 q_data.push(q);
             }
-
-            draw();
+            draw_plot();
         }
+        //-----------------------------------Schaltungssimulation--------------------------------------------------------
 		// Initialize canvas and context
-        const canvas2 = document.getElementById('canvas');
-        const ctx2 = canvas2.getContext('2d');
+        const cirquit_canvas = document.getElementById('cirquit_canvas');
+        const ctx2 = cirquit_canvas.getContext('2d');
 
         // Current and voltage (default values)
         let spulenStrom = 0; // In Amperes
@@ -175,63 +183,157 @@
                 ctx2.fillStyle = dotColor;
                 ctx2.fill();
             }
-			//static d = (time * dotSpeed)
         }
 
         function drawKnot(x, y) {
-            const knotRadius = 8;
+            const knotRadius = 5;
             ctx2.beginPath();
             ctx2.arc(x, y, knotRadius, 0, 2 * Math.PI);
             ctx2.fillStyle = 'black';
             ctx2.fill();
         }
-
         // Function to create a wire with moving dots
-        function createWire(startX, startY, endX, endY, current, voltage) {
+        function createWire(startX, startY, endX, endY, current, voltage,knots) {
             drawWire(startX, startY, endX, endY);
             drawDots(startX, startY, endX, endY, current, voltage);
-            drawKnot(startX, startY);
-            drawKnot(endX, endY);
+            if (knots){
+                drawKnot(startX, startY);
+                drawKnot(endX, endY);
+            }
+        }
+
+        function createDiode(startX, startY) {
+            drawWire(startX-25, startY, startX+25, startY); //horizontal
+            drawWire(startX-25, startY+50, startX, startY);
+            drawWire(startX+25, startY+50, startX, startY);
+            drawWire(startX-25, startY+50, startX+25, startY+50);
+        }
+
+        function drawMagneticField(startX, startY, endX, endY, scalingFactor) {
+            ctx2.beginPath();
+            ctx2.lineWidth = 1;
+            ctx2.strokeStyle = 'blue';
+
+            const loops = 5; // Number of loops in the inductor
+            const totalLength = endX - startX;
+            const loopSpacing = totalLength / (loops * 2); // Space for each half loop
+
+            let currentX = startX;
+            console.log(scalingFactor);
+
+            for (let i = 0; i < loops; i++) {
+                // Draw magnetic field lines around each loop
+                for (let j = 1; j <= scalingFactor; j++) {
+                    const offset = j * loopSpacing / (scalingFactor + 1);
+                    // Top part of the loop
+                    ctx2.moveTo(currentX + offset, startY - loopSpacing);
+                    ctx2.bezierCurveTo(
+                        currentX + offset - loopSpacing, startY - loopSpacing * 2, 
+                        currentX + offset + loopSpacing, startY - loopSpacing * 2, 
+                        currentX + offset + loopSpacing, startY - loopSpacing
+                    );
+                    // Bottom part of the loop
+                    ctx2.moveTo(currentX + offset, startY + loopSpacing);
+                    ctx2.bezierCurveTo(
+                        currentX + offset - loopSpacing, startY + loopSpacing * 2, 
+                        currentX + offset + loopSpacing, startY + loopSpacing * 2, 
+                        currentX + offset + loopSpacing, startY + loopSpacing
+                    );
+                }
+                currentX += loopSpacing * 2;
+            }
+
+            ctx2.stroke();
+        }
+
+        function drawInductor(startX, startY, endX, endY,current) {
+            ctx2.beginPath();
+            ctx2.lineWidth = 5;
+            ctx2.strokeStyle = 'black';
+
+            const loops = 5; // Number of loops in the inductor
+            const totalLength = endX - startX;
+            const loopSpacing = totalLength / (loops * 2); // Space for each half loop
+
+            let currentX = startX;
+            for (let i = 0; i < loops; i++) {
+                // Draw the uper half of the loop
+                ctx2.arc(currentX + loopSpacing, startY, loopSpacing, Math.PI, 0, false);
+                currentX += loopSpacing * 2;
+                
+            }
+
+            ctx2.stroke();
+            drawMagneticField(startX, startY, endX, endY, current);
+        }
+        function createSwitch(startX,startY,state, current, voltage){
+            if(state){
+                
+                shiftY = 0;
+                shiftX = 0;
+                knots = true;
+            }
+            else{
+                shiftY = 30;
+                shiftX = 5;
+                knots = false;
+            }
+            createWire(startX, startY, startX+50-shiftX, startY-shiftY, current, voltage, knots)
+
         }
 	
 
         // Update function to redraw all wires and dots
         function update() {
-            ctx2.clearRect(0, 0, canvas2.width, canvas2.height); // Clear canvas
-			
-			const conversionFactor = 1/1000000000;
+            ctx2.clearRect(0, 0, cirquit_canvas.width, cirquit_canvas.height); // Clear canvas
 			
 			
-            // Example wires (you can add more wires here)
-			
-			spulenStrom += i_L*conversionFactor;
-			kondensatorStrom += i_C*conversionFactor/10000000000;
+			spulenStrom += i_L/1000000000;
+			kondensatorStrom += i_C/10000000000000000000;
 			lastStrom = spulenStrom - kondensatorStrom;
 			let kondensatorSpanung = 1 + v_C/10;
-            createWire(50, 50, 250, 50, spulenStrom*q, voltage); // oben links
-            createWire(250, 50, 250, 350, -spulenStrom*(1-q), voltage); // mitte links
-            createWire(50, 350, 50, 50, spulenStrom*q, voltage); // links links
-            createWire(250, 350, 50, 350, spulenStrom*q, voltage); // unten links
-			createWire(450, 350, 250, 350, spulenStrom, voltage); // unten mitte
-			createWire(450, 50, 450, 350, kondensatorStrom, kondensatorSpanung); // mitte rechts
-			createWire(250, 50, 450, 50, spulenStrom, voltage); // oben mitte
-			createWire(450, 50, 550, 50, lastStrom, voltage); // Last oben
-			createWire(550, 50, 550, 350, lastStrom, voltage); // Last oben
-			createWire(550, 350, 450, 350, lastStrom, voltage); // Last oben
+            console.log(spulenStrom);
+            //Schalterstrang
+            createSwitch(100,50,q, spulenStrom*q, voltage);
+            createWire(50, 50, 100, 50, spulenStrom*q, voltage,true); // oben links
+            createWire(150, 50, 250, 50, spulenStrom*q, voltage,true); // oben links
+            createWire(50, 350, 50, 50, spulenStrom*q, voltage,true); // links links
+            createWire(250, 350, 50, 350, spulenStrom*q, voltage,true); // unten links
+            //Diosenstrang
+            createWire(250, 150, 250, 50, spulenStrom*(1-q), voltage,true); // oben
+            createWire(250, 350, 250, 150, spulenStrom*(1-q), voltage,true); // unten
+            createDiode(250, 150);
+            //
+			createWire(450, 350, 250, 350, spulenStrom, voltage,true); // unten mitte
+            //Kondensatorstrang
+			createWire(450, 50, 450, 350, kondensatorStrom, kondensatorSpanung,true); // mitte rechts
+            //Spulenstrang
+			createWire(250, 50, 320, 50, spulenStrom, voltage,true); // oben mitte
+            createWire(400, 50, 450, 50, spulenStrom, voltage,true); // oben mitte
+            drawInductor(320, 50, 400, 50, spulenStrom);
+			createWire(450, 50, 550, 50, lastStrom, voltage,true); // Last oben
+			createWire(550, 50, 550, 350, lastStrom, voltage,true); // Last oben
+			createWire(550, 350, 450, 350, lastStrom, voltage,true); // Last oben
+
+            
 			
 			simulate();
             requestAnimationFrame(update);
         }
 
         // Display cursor coordinates
-        canvas2.addEventListener('mousemove', function(e) {
-            const rect = canvas2.getBoundingClientRect();
+        cirquit_canvas.addEventListener('mousemove', function(e) {
+            const rect = cirquit_canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
             document.getElementById('coordinates').textContent = `Coordinates: (${x.toFixed(2)}, ${y.toFixed(2)})`;
         });
-
+       
         // Set up event listeners for input changes
+        document.getElementById('automatic_mode').addEventListener('input', function(e) {
+            automatic_mode = e.target.checked;
+        });
+
         document.getElementById('currentInput').addEventListener('input', function(e) {
             current = parseFloat(e.target.value);
         });
@@ -239,6 +341,7 @@
         document.getElementById('voltageInput').addEventListener('input', function(e) {
             voltage = parseFloat(e.target.value);
         });
+
 
         update(); // Start the animation loop
     </script>
