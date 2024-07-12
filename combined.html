@@ -188,12 +188,15 @@
                     const angle = Math.atan2(dy, dx);
 
                     for (let d = (dotSpeed) % dotSpacing; d < distance; d += dotSpacing) {
+                        
                         const x = this.startX + Math.cos(angle) * d;
                         const y = this.startY + Math.sin(angle) * d;
-                        ctx2.beginPath();
-                        ctx2.arc(x, y, dotRadius, 0, 2 * Math.PI);
-                        ctx2.fillStyle = dotColor;
-                        ctx2.fill();
+                        if (d>0.1){
+                            ctx2.beginPath();
+                            ctx2.arc(x, y, dotRadius, 0, 2 * Math.PI);
+                            ctx2.fillStyle = dotColor;
+                            ctx2.fill();
+                        }
                     }
                 }
             }()
@@ -288,8 +291,27 @@
             mySwitch.createWire(current, voltage);
 
         }
-	
-
+        
+        function createCapacitor(startX, startY, current, highVoltage, lowVoltage){
+            upLeft = new Wire(startX-25,startY,startX,startY, false)
+            upLeft.createWire(current,highVoltage);
+            upRight = new Wire(startX+25,startY,startX,startY, false)
+            upRight.createWire(current,highVoltage);
+            downLeft = new Wire(startX-25,startY+50,startX,startY+50, false)
+            downLeft.createWire(current,lowVoltage);
+            downRight = new Wire(startX+25,startY+50,startX,startY+50, false)
+            downRight.createWire(current,lowVoltage);
+        }
+        function createResistor(startX, startY){
+            up = new Wire(startX-15,startY,startX+15,startY, false)
+            up.createWire(0,0);
+            right = new Wire(startX+15,startY,startX+15,startY+70, false)
+            right.createWire(0,0);
+            right = new Wire(startX-15,startY,startX-15,startY+70, false)
+            right.createWire(0,0);
+            up = new Wire(startX-15,startY+70,startX+15,startY+70, false)
+            up.createWire(0,0);
+        }
         // Update function to redraw all wires and dots
         wire1 = new Wire(50, 50, 100, 50, true);
         wire2 = new Wire(150, 50, 250, 50, true);
@@ -302,7 +324,8 @@
         //
         
         //Kondensatorstrang
-        wire8 = new Wire(450, 350, 450, 50, true);
+        wire8 = new Wire(450, 150, 450, 50, false);
+        wire15 = new Wire(450,200,450,350,false);
         //Spulenstrang
         wire9 = new Wire(250, 50, 320, 50, true);
         wire10 = new Wire(400, 50, 450, 50, true);
@@ -310,7 +333,8 @@
         //drawinductor()
         wire7 = new Wire(450, 50, 550, 50, true);
         wire12 = new Wire(550, 350, 450, 350, true);
-        wire13 = new Wire(550, 50, 550, 350, true);
+        wire13 = new Wire(550, 50, 550, 150, true);
+        wire16 = new Wire(550, 220, 550, 350, true);
         wire14 = new Wire(450, 350, 250, 350, true);
 
         function update() {
@@ -319,7 +343,7 @@
 			spulenStrom = i_L*conversion_factor;
 			kondensatorStrom = i_C*conversion_factor;
 			lastStrom = spulenStrom - kondensatorStrom;
-			let kondensatorSpanung = voltage + v_C/10;
+			let kondensatorSpanung = voltage + v_C/2;
             //console.log(spulenStrom); //debug
             //Schalterstrang
             createSwitch(100,50,q, spulenStrom*q, voltage);
@@ -335,15 +359,21 @@
             //
 			
             //Kondensatorstrang
-			wire8.createWire(-kondensatorStrom, kondensatorSpanung); // mitte rechts
+			wire8.createWire(-kondensatorStrom, voltage); // mitte rechts
+            wire15.createWire(kondensatorStrom, voltage);
+            createCapacitor(450, 150, kondensatorStrom, kondensatorSpanung, 0);
             //Spulenstrang
 			wire9.createWire(spulenStrom, voltage); // oben mitte
             wire10.createWire(spulenStrom, voltage); // oben mitte
+            wire14.createWire(spulenStrom, voltage); // unten mitte
             drawInductor(320, 50, 400, 50, spulenStrom);
+            //Laststrang
+            createResistor(550, 150);
             wire7.createWire(lastStrom, voltage); // unten mitte
 			wire12.createWire(lastStrom, voltage); // Last oben
+            wire16.createWire(lastStrom, voltage); // Last oben
 			wire13.createWire(lastStrom, voltage); // Last oben
-			wire14.createWire(spulenStrom, voltage); // Last oben
+			
 
             
 			
