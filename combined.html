@@ -135,11 +135,6 @@
         const cirquit_canvas = document.getElementById('cirquit_canvas');
         const ctx2 = cirquit_canvas.getContext('2d');
 
-        // Current and voltage (default values)
-        let spulenStrom = 0; // In Amperes
-		let kondensatorStrom = 0; // In Amperes
-        let voltage = 1; // In Volts
-
         class Wire{
             constructor(startX, startY, endX, endY,knots){
                 this.startX = startX;
@@ -356,8 +351,6 @@
         diode = new Component(250, 150);
         wire5 = new Wire(250, 150, 250, 50, true);
         wire6 = new Wire(250, 350, 250, 150, true);
-        //createDiode()
-        //
         
         //Kondensatorstrang
         capacitor = new Component(450, 150);
@@ -378,39 +371,41 @@
 
         function update() {
             ctx2.clearRect(0, 0, cirquit_canvas.width, cirquit_canvas.height); // Clear canvas
-			const conversion_factor = 2;
-			spulenStrom = i_L*conversion_factor;
-			kondensatorStrom = i_C*conversion_factor;
-			lastStrom = spulenStrom - kondensatorStrom;
-			let kondensatorSpanung = voltage + v_C/2;
+            let groundVlt = 1; // In Volts
+            
+            const conversion_factor = 2;
+			let inductorCrt = i_L*conversion_factor;
+			let capacitorCrt = i_C*conversion_factor;
+			let resisitorCrt = inductorCrt - capacitorCrt;
+			let capacitorVlt = groundVlt + v_C;
             //console.log(spulenStrom); //debug
             //Schalterstrang
-            switch1.createSwitch(q, spulenStrom*q, voltage);
-            wire1.createWire(spulenStrom*q, voltage);
-            wire2.createWire(spulenStrom*q, voltage); // oben links
-            wire17.createWire(spulenStrom*q, voltage);
+            switch1.createSwitch(q, inductorCrt*q, groundVlt);
+            wire1.createWire(inductorCrt*q, groundVlt);
+            wire2.createWire(inductorCrt*q, groundVlt); // oben links
+            wire17.createWire(inductorCrt*q, groundVlt);
             voltSrc.createVoltSrc();
-            wire3.createWire(spulenStrom*q, voltage); // links links
-            wire4.createWire(spulenStrom*q, voltage); // unten links
+            wire3.createWire(inductorCrt*q, groundVlt); // links links
+            wire4.createWire(inductorCrt*q, groundVlt); // unten links
             //Diosenstrang
-            wire5.createWire(spulenStrom*(1-q), voltage); // oben
-            wire6.createWire(spulenStrom*(1-q), voltage); // unten
+            wire5.createWire(inductorCrt*(1-q), groundVlt); // oben
+            wire6.createWire(inductorCrt*(1-q), groundVlt); // unten
             diode.createDiode();
             //Kondensatorstrang
-			wire8.createWire(-kondensatorStrom, voltage); // mitte rechts
-            wire15.createWire(kondensatorStrom, voltage);
-            capacitor.createCapacitor(kondensatorStrom, kondensatorSpanung, 0);
+			wire8.createWire(-capacitorCrt, groundVlt); // mitte rechts
+            wire15.createWire(capacitorCrt, groundVlt);
+            capacitor.createCapacitor(capacitorCrt, capacitorVlt, groundVlt);
             //Spulenstrang
-			wire9.createWire(spulenStrom, voltage); // oben mitte
-            wire10.createWire(spulenStrom, voltage); // oben mitte
-            wire14.createWire(spulenStrom, voltage); // unten mitte
-            inductor.drawInductor(400, 50, spulenStrom);
+			wire9.createWire(inductorCrt, groundVlt); // oben mitte
+            wire10.createWire(inductorCrt, groundVlt); // oben mitte
+            wire14.createWire(inductorCrt, groundVlt); // unten mitte
+            inductor.drawInductor(400, 50, inductorCrt);
             //Laststrang
             resistor.createResistor();
-            wire7.createWire(lastStrom, voltage); // unten mitte
-			wire12.createWire(lastStrom, voltage); // Last oben
-            wire16.createWire(lastStrom, voltage); // Last oben
-			wire13.createWire(lastStrom, voltage); // Last oben
+            wire7.createWire(resisitorCrt, groundVlt); // unten mitte
+			wire12.createWire(resisitorCrt, groundVlt); // Last oben
+            wire16.createWire(resisitorCrt, groundVlt); // Last oben
+			wire13.createWire(resisitorCrt, groundVlt); // Last oben
 			
 
             
@@ -437,7 +432,7 @@
         });
 
         document.getElementById('voltageInput').addEventListener('input', function(e) {
-            voltage = parseFloat(e.target.value);
+            groundVlt = parseFloat(e.target.value);
         });
 
 
