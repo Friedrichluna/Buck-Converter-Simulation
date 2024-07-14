@@ -155,6 +155,7 @@
                 this.knots = knots;
             }
             
+            
             // Function to draw a wire
             drawWire() {
                 ctx2.beginPath();
@@ -181,9 +182,13 @@
                 let dotRadius = pixel(3);
                 let dotColor = 'yellow';
                 let integralCurrent = 0;
+                let lagVoltage = 0;
                 return function (current, voltage) {
-                    const dotSpacing = this.getDotSpacing(voltage);
+                    lagVoltage = lagVoltage+ (voltage-lagVoltage)/10;
+                    const dotSpacing = this.getDotSpacing(lagVoltage);
+                    
                     integralCurrent += current;
+                    
                     const dotSpeed = integralCurrent/voltage; // Speed of the dots, proportional to current
                     const time = Date.now() / 1000; // Get current time in seconds
 
@@ -191,6 +196,10 @@
                     const dy = this.endY - this.startY;
                     const distance = Math.sqrt(dx * dx + dy * dy);
                     const angle = Math.atan2(dy, dx);
+                    if (Math.abs(dotSpeed%dotSpacing) < 1) {
+                        integralCurrent = 1;
+                    }
+
 
                     for (let d = (dotSpeed) % dotSpacing; d < distance; d += dotSpacing) {
                         
@@ -294,7 +303,6 @@
             }
             mySwitch = new Wire(startX, startY, startX+50-shiftX, startY-shiftY, knots);
             mySwitch.createWire(current, voltage);
-
         }
         
         function createCapacitor(startX, startY, current, highVoltage, lowVoltage){
@@ -355,7 +363,7 @@
 			lastStrom = spulenStrom - kondensatorStrom;
 			let kondensatorSpanung = voltage + v_C/2;
             let quellSpannung= voltage +0.5;
-            let lastspannung = kondensatorSpanung/4;
+            let lastspannung = voltage + v_C/32;
             //console.log(spulenStrom); //debug
             //Schalterstrang
             createSwitch(100,50,q, spulenStrom*q, quellSpannung);
