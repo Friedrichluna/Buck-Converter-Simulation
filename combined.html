@@ -56,7 +56,7 @@
         const q_data = [];
 
         document.addEventListener('keydown', (event) => {
-            if (event.code === 'Space') {
+            if (event.key === 'q') {
                 q = 1 - q; // Schaltzustand wechseln
             } else if (event.key === 's') {
                 stopSimulation = true; // Stoppen der Simulation
@@ -158,14 +158,6 @@
                 ctx2.strokeStyle = 'black';
                 ctx2.stroke();
             }
-            drawWire_(startX,startY,endX,endY) {
-                ctx2.beginPath();
-                ctx2.lineWidth = 5;
-                ctx2.moveTo(startX, startY);
-                ctx2.lineTo(endX, endY);
-                ctx2.strokeStyle = 'black';
-                ctx2.stroke();
-            }
             // Distance between dots is inversely proportional to voltage
             getDotSpacing(voltage) {
                 return 50 / voltage;
@@ -217,120 +209,167 @@
                 }
             }
         }
-        function createDiode(startX, startY) {
-            diode = new Wire(startX-25, startY, startX+25, startY);
-            diode.drawWire_(startX-25, startY, startX+25, startY); //horizontal
-            diode.drawWire_(startX-25, startY+50, startX, startY);
-            diode.drawWire_(startX+25, startY+50, startX, startY);
-            diode.drawWire_(startX-25, startY+50, startX+25, startY+50);
-        }
 
-        function drawMagneticField(startX, startY, endX, endY, scalingFactor) {
-            ctx2.beginPath();
-            ctx2.lineWidth = 1;
-            ctx2.strokeStyle = 'blue';
 
-            const loops = 5; // Number of loops in the inductor
-            const totalLength = endX - startX;
-            const loopSpacing = totalLength / (loops * 2); // Space for each half loop
+        class Component extends Wire {
+            constructor(startX, startY){
+                super(); //calls parent
+                this.startX = startX;
+                this.startY = startY;
+                this.knots = false;
+            }
 
-            let currentX = startX;
-            scalingFactor = scalingFactor*2
+            drawWire_(startX,startY,endX,endY) {
+                ctx2.beginPath();
+                ctx2.lineWidth = 5;
+                ctx2.moveTo(startX, startY);
+                ctx2.lineTo(endX, endY);
+                ctx2.strokeStyle = 'black';
+                ctx2.stroke();
+            }
+            createDiode() {
+                let startX = this.startX;
+                let startY = this.startY;
+                this.drawWire_(startX-25, startY, startX+25, startY);
+                this.drawWire_(startX-25, startY+50, startX, startY);
+                this.drawWire_(startX+25, startY+50, startX, startY);
+                this.drawWire_(startX-25, startY+50, startX+25, startY+50);
+            }
+            drawMagneticField(startX, startY, endX, endY, scalingFactor) {
+                ctx2.beginPath();
+                ctx2.lineWidth = 1;
+                ctx2.strokeStyle = 'blue';
 
-            for (let i = 0; i < loops; i++) {
-                // Draw magnetic field lines around each loop
-                for (let j = 1; j <= scalingFactor; j++) {
-                    const offset = j * loopSpacing / (scalingFactor + 1);
-                    // Top part of the loop
-                    ctx2.moveTo(currentX + offset, startY - loopSpacing);
-                    ctx2.bezierCurveTo(
-                        currentX + offset - loopSpacing, startY - loopSpacing * 2, 
-                        currentX + offset + loopSpacing, startY - loopSpacing * 2, 
-                        currentX + offset + loopSpacing, startY - loopSpacing
-                    );
+                const loops = 5; // Number of loops in the inductor
+                const totalLength = endX - startX;
+                const loopSpacing = totalLength / (loops * 2); // Space for each half loop
+
+                let currentX = startX;
+                scalingFactor = scalingFactor*2
+
+                for (let i = 0; i < loops; i++) {
+                    // Draw magnetic field lines around each loop
+                    for (let j = 1; j <= scalingFactor; j++) {
+                        const offset = j * loopSpacing / (scalingFactor + 1);
+                        // Top part of the loop
+                        ctx2.moveTo(currentX + offset, startY - loopSpacing);
+                        ctx2.bezierCurveTo(
+                            currentX + offset - loopSpacing, startY - loopSpacing * 2, 
+                            currentX + offset + loopSpacing, startY - loopSpacing * 2, 
+                            currentX + offset + loopSpacing, startY - loopSpacing
+                        );
+                    }
+                    currentX += loopSpacing * 2;
                 }
-                currentX += loopSpacing * 2;
+
+                ctx2.stroke();
             }
 
-            ctx2.stroke();
-        }
+            drawInductor(endX, endY, current) {
+                let startX = this.startX;
+                let startY = this.startY;
+                ctx2.beginPath();
+                ctx2.lineWidth = 5;
+                ctx2.strokeStyle = 'black';
 
-        function drawInductor(startX, startY, endX, endY,current) {
-            ctx2.beginPath();
-            ctx2.lineWidth = 5;
-            ctx2.strokeStyle = 'black';
+                const loops = 5; // Number of loops in the inductor
+                const totalLength = endX - startX;
+                const loopSpacing = totalLength / (loops * 2); // Space for each half loop
 
-            const loops = 5; // Number of loops in the inductor
-            const totalLength = endX - startX;
-            const loopSpacing = totalLength / (loops * 2); // Space for each half loop
+                let currentX = startX;
+                for (let i = 0; i < loops; i++) {
+                    // Draw the uper half of the loop
+                    ctx2.arc(currentX + loopSpacing, startY, loopSpacing, Math.PI, 0, false);
+                    currentX += loopSpacing * 2;
+                    
+                }
 
-            let currentX = startX;
-            for (let i = 0; i < loops; i++) {
-                // Draw the uper half of the loop
-                ctx2.arc(currentX + loopSpacing, startY, loopSpacing, Math.PI, 0, false);
-                currentX += loopSpacing * 2;
+                ctx2.stroke();
+                this.drawMagneticField(startX, startY, endX, endY, current);
+            }
+
+            createSwitch(state, current, voltage){
+                let startX = this.startX;
+                let startY = this.startY;
+                let shiftY = 0;
+                let shiftX = 0;
+                let knots = false;
+                if(state){
+                    shiftY = 0;
+                    shiftX = 0;
+                    knots = true;
+                }
+                else{
+                    shiftY = 30;
+                    shiftX = 5;
+                    knots = false;
+                }
+                this.endX = startX+50-shiftX;
+                this.endY = startY-shiftY;
+                this.knots = knots;
+                this.createWire(current, voltage);
+
+            }
+            
+            createCapacitor(current, highVoltage, lowVoltage){
+                let startX = this.startX;
+                let startY = this.startY;
+                //hier noch Fakotr hinzufügen
+                let upLeft = new Wire(startX-25,startY,startX,startY, false)
+                upLeft.createWire(current,highVoltage);
+                let upRight = new Wire(startX+25,startY,startX,startY, false)
+                upRight.createWire(current,highVoltage);
+                let downLeft = new Wire(startX-25,startY+50,startX,startY+50, false)
+                downLeft.createWire(current,lowVoltage);
+                let downRight = new Wire(startX+25,startY+50,startX,startY+50, false)
+                downRight.createWire(current,lowVoltage);
+            }
+            createResistor(){
+                let startX = this.startX;
+                let startY = this.startY;
+                this.drawWire_(startX-15,startY,startX+15,startY); //up
+                this.drawWire_(startX+15,startY,startX+15,startY+70, false); //right
+                this.drawWire_(startX-15,startY,startX-15,startY+70, false); //left
+                this.drawWire_(startX-15,startY+70,startX+15,startY+70, false); //down
+            }
+            createVoltSrc(){
+                const radius = 30;
+                let startX = this.startX;
+                let startY = this.startY+radius;
                 
+                ctx2.beginPath();
+                ctx2.arc(startX, startY, radius, 0, 2 * Math.PI);
+                ctx2.fillStyle = 'black';
+                ctx2.stroke();
             }
-
-            ctx2.stroke();
-            drawMagneticField(startX, startY, endX, endY, current);
-        }
-        function createSwitch(startX,startY,state, current, voltage){
-            if(state){
-                
-                shiftY = 0;
-                shiftX = 0;
-                knots = true;
-            }
-            else{
-                shiftY = 30;
-                shiftX = 5;
-                knots = false;
-            }
-            mySwitch = new Wire(startX, startY, startX+50-shiftX, startY-shiftY, knots);
-            mySwitch.createWire(current, voltage);
-
         }
         
-        function createCapacitor(startX, startY, current, highVoltage, lowVoltage){
-            upLeft = new Wire(startX-25,startY,startX,startY, false)
-            upLeft.createWire(current,highVoltage);
-            upRight = new Wire(startX+25,startY,startX,startY, false)
-            upRight.createWire(current,highVoltage);
-            downLeft = new Wire(startX-25,startY+50,startX,startY+50, false)
-            downLeft.createWire(current,lowVoltage);
-            downRight = new Wire(startX+25,startY+50,startX,startY+50, false)
-            downRight.createWire(current,lowVoltage);
-        }
-        function createResistor(startX, startY){
-            up = new Wire(startX-15,startY,startX+15,startY, false)
-            up.createWire(0,0);
-            right = new Wire(startX+15,startY,startX+15,startY+70, false)
-            right.createWire(0,0);
-            right = new Wire(startX-15,startY,startX-15,startY+70, false)
-            right.createWire(0,0);
-            up = new Wire(startX-15,startY+70,startX+15,startY+70, false)
-            up.createWire(0,0);
-        }
         // Update function to redraw all wires and dots
+        switch1 = new Component(100,50);
         wire1 = new Wire(50, 50, 100, 50, true);
         wire2 = new Wire(150, 50, 250, 50, true);
-        wire3 = new Wire(50, 350, 50, 50, true);
+        wire17 = new Wire(50, 350, 50, 150, true)
+        voltSrc = new Component(50,150);
+        wire3 = new Wire(50, 150, 50, 50, true);
         wire4 = new Wire(250, 350, 50, 350, true);
         //Diodenstrang
+        diode = new Component(250, 150);
         wire5 = new Wire(250, 150, 250, 50, true);
         wire6 = new Wire(250, 350, 250, 150, true);
         //createDiode()
         //
         
         //Kondensatorstrang
+        capacitor = new Component(450, 150);
         wire8 = new Wire(450, 150, 450, 50, false);
         wire15 = new Wire(450,200,450,350,false);
         //Spulenstrang
+        inductor = new Component(320, 50);
         wire9 = new Wire(250, 50, 320, 50, true);
         wire10 = new Wire(400, 50, 450, 50, true);
         wire11 = new Wire(450, 50, 550, 50, true);
-        //drawinductor()
+        //Last
+        resistor = new Component(550, 150);
         wire7 = new Wire(450, 50, 550, 50, true);
         wire12 = new Wire(550, 350, 450, 350, true);
         wire13 = new Wire(550, 50, 550, 150, true);
@@ -346,29 +385,28 @@
 			let kondensatorSpanung = voltage + v_C/2;
             //console.log(spulenStrom); //debug
             //Schalterstrang
-            createSwitch(100,50,q, spulenStrom*q, voltage);
-            //
+            switch1.createSwitch(q, spulenStrom*q, voltage);
             wire1.createWire(spulenStrom*q, voltage);
             wire2.createWire(spulenStrom*q, voltage); // oben links
+            wire17.createWire(spulenStrom*q, voltage);
+            voltSrc.createVoltSrc();
             wire3.createWire(spulenStrom*q, voltage); // links links
             wire4.createWire(spulenStrom*q, voltage); // unten links
             //Diosenstrang
             wire5.createWire(spulenStrom*(1-q), voltage); // oben
             wire6.createWire(spulenStrom*(1-q), voltage); // unten
-            createDiode(250, 150);
-            //
-			
+            diode.createDiode();
             //Kondensatorstrang
 			wire8.createWire(-kondensatorStrom, voltage); // mitte rechts
             wire15.createWire(kondensatorStrom, voltage);
-            createCapacitor(450, 150, kondensatorStrom, kondensatorSpanung, 0);
+            capacitor.createCapacitor(kondensatorStrom, kondensatorSpanung, 0);
             //Spulenstrang
 			wire9.createWire(spulenStrom, voltage); // oben mitte
             wire10.createWire(spulenStrom, voltage); // oben mitte
             wire14.createWire(spulenStrom, voltage); // unten mitte
-            drawInductor(320, 50, 400, 50, spulenStrom);
+            inductor.drawInductor(400, 50, spulenStrom);
             //Laststrang
-            createResistor(550, 150);
+            resistor.createResistor();
             wire7.createWire(lastStrom, voltage); // unten mitte
 			wire12.createWire(lastStrom, voltage); // Last oben
             wire16.createWire(lastStrom, voltage); // Last oben
