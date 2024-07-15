@@ -11,30 +11,45 @@
     </style>
 </head>
 <body>
-	<div>
-        <label for="automatic_mode">Automatic-Mode: </label>
-        <input type="checkbox" id="automatic_mode" checked>
+	<div style="display: flex;">
+        <div>
+            <canvas id="cirquit_canvas" width="600" height="400"></canvas>
+            <canvas id="plot" width="600" height="600"></canvas>
+        </div>
+        <div style="margin-left: 20px;">
+            <div>
+                <label for="automatic_mode">Automatic-Mode: </label>
+                <input type="checkbox" id="automatic_mode" checked>
+            </div>
+            <div>
+                <label for="Resistor">Resitor (Ohm): </label>
+                <input type="number" id="resisitanceInput" value="10" step="1">
+            </div>
+            <div>
+                <label for="InputVoltage">Input Voltage (V): </label>
+                <input type="number" id="voltageInput" value="20" step="1">
+            </div>
+            <div>
+                <label for="Inductance">Inductance (mH): </label>
+                <input type="number" id="inductanceInput" value="99" step="10" min="1" max="1000">
+            </div>
+            <div>
+                <label for="Inductance">Capacitance (mF): </label>
+                <input type="number" id="capacitanceInput" value="1" step="0.1" min="0.1" max="1000">
+            </div>
+        </div>
     </div>
-    <canvas id="cirquit_canvas" width="800" height="400"></canvas>
-    <div>
-        <label for="currentInput">Current (A): </label>
-        <input type="number" id="currentInput" value="1" step="0.1">
-        <label for="voltageInput">Voltage (V): </label>
-        <input type="number" id="voltageInput" value="5" step="0.1">
-    </div>
-    <div id="coordinates">Coordinates: (0, 0)</div>
-    <canvas id="plot" width="800" height="600"></canvas>
     <script>
         //----------------------------Differenzialgleichung---------------------------------
         // Parameter
-        const V_in = 20; // Eingangsspannung in Volt
-        const L = 99e-3; // Induktivität in Henry
-        const C = 1e-3; // Kapazität in Farad
-        const R_load = 10; // Lastwiderstand in Ohm
+        let V_in = 20; // Eingangsspannung in Volt
+        let L = 99e-3; // Induktivität in Henry
+        let C = 1e-3; // Kapazität in Farad
+        let R_load = 10; // Lastwiderstand in Ohm
         const f = 100e3; // Schaltfrequenz in Hz
         const T = 1 / f; // Schaltperiode in Sekunden
         const dt = 1e-4; // Zeitschritt
-        const groundVlt = 1; // In Volts
+        const groundVlt = 1; // In Volts (only for animation purposes, not simulation)
 		
         // Initialbedingungen
         let i_L = 0; // Anfangsstrom durch die Induktivität
@@ -51,7 +66,6 @@
         const ctx = plot_canvas.getContext('2d');
 
         let t_total = 0; // Gesamtzeit
-        const t_data = [];
         const iL_data = [];
         const vC_data = [];
         const q_data = [];
@@ -65,9 +79,34 @@
                 breakSimulation = !breakSimulation; // Pausieren und Fortsetzen der Simulation
             }
         });
+       
+        // Set up event listeners for input changes
+        document.getElementById('automatic_mode').addEventListener('input', function(e) {
+            automatic_mode = e.target.checked;
+        });
+
+        document.getElementById('resisitanceInput').addEventListener('input', function(e) {
+            R_load = parseFloat(e.target.value);
+            if (R_load<0) {R_load = 0;}
+        });
+
+        document.getElementById('voltageInput').addEventListener('input', function(e) {
+            V_in = parseFloat(e.target.value);
+            if (V_in<0) {V_in = 0;}
+        });
+        document.getElementById('inductanceInput').addEventListener('input', function(e) {
+            L = 0.001*parseFloat(e.target.value);
+            if (L< 0.001) {L=0.001;}
+        });
+        document.getElementById('capacitanceInput').addEventListener('input', function(e) {
+            C = 0.001*parseFloat(e.target.value);
+            if (C< 0.001) {C=0.001;}
+        });
 
 
         function draw_plot() {
+            
+            const n = 1000; //amount of data beeing displayed
             ctx.clearRect(0, 0, plot_canvas.width, plot_canvas.height);
 
             const margin = 50;
@@ -91,12 +130,21 @@
                 ctx.fillText(title, margin, plot_canvas.height - margin - yOffset - graphHeight - 10);
                 ctx.fillText(yLabel, 10, plot_canvas.height - margin - yOffset - graphHeight / 2);
             }
+            const q_data_slice = q_data.slice(-n); //die letzten n werte aus dem Array
+            const iL_data_slice = iL_data.slice(-n);
+            const vC_data_slice = vC_data.slice(-n);
 
-            plotGraph(q_data, 'Schaltzustand q(t)', 'Zustand (0 oder 1)', 0, 1, 0);
-            plotGraph(iL_data, 'Spulenstrom i_L(t)', 'Strom (A)', Math.min(...iL_data), Math.max(...iL_data), graphHeight + margin);
-            plotGraph(vC_data, 'Kondensatorspannung v_C(t)', 'Spannung (V)', Math.min(...vC_data), Math.max(...vC_data), 2 * (graphHeight + margin));
+            const q_last = q_data[q_data.length - 1].toFixed(0); //der letzte Wert
+            const iL_last = iL_data[iL_data.length - 1].toFixed(2); 
+            const vC_last = vC_data[vC_data.length - 1].toFixed(2);
+            ctx.fillText(`t = ${t_total.toFixed(3)}s`, margin, plot_canvas.height - 20);
+
+
+            plotGraph(q_data_slice, 'Schaltzustand q(t)', `${q_last}`, 0, 1, 0);
+            plotGraph(iL_data_slice, 'Spulenstrom i_L(t)', `${iL_last}A`, Math.min(...iL_data), Math.max(...iL_data), graphHeight + margin);
+            plotGraph(vC_data_slice, 'Kondensatorspannung v_C(t)', `${vC_last}V`, Math.min(...vC_data), Math.max(...vC_data), 2 * (graphHeight + margin));
+        
         }
-
         function simulate() {
             if (stopSimulation) return;
 
@@ -124,7 +172,6 @@
                 t_total += dt;
 
                 // Daten speichern
-                t_data.push(t_total);
                 iL_data.push(i_L);
                 vC_data.push(v_C);
                 q_data.push(q);
@@ -232,7 +279,6 @@
                 }
             }
         }
-
 
         class Component extends Wire {
             constructor(startX, startY){
@@ -439,34 +485,13 @@
 			wire12.createWire(resisitorCrt, groundVlt); // Last oben
             wire16.createWire(resisitorCrt, groundVlt); // Last oben
 			wire13.createWire(resisitorCrt, capacitorVlt); // Last oben
-			
-
             
 			
 			simulate();
             requestAnimationFrame(update);
         }
 
-        // Display cursor coordinates
-        cirquit_canvas.addEventListener('mousemove', function(e) {
-            const rect = cirquit_canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            document.getElementById('coordinates').textContent = `Coordinates: (${x.toFixed(2)}, ${y.toFixed(2)})`;
-        });
-       
-        // Set up event listeners for input changes
-        document.getElementById('automatic_mode').addEventListener('input', function(e) {
-            automatic_mode = e.target.checked;
-        });
-
-        document.getElementById('currentInput').addEventListener('input', function(e) {
-            current = parseFloat(e.target.value);
-        });
-
-        document.getElementById('voltageInput').addEventListener('input', function(e) {
-            groundVlt = parseFloat(e.target.value);
-        });
+        
 
 
         update(); // Start the animation loop
