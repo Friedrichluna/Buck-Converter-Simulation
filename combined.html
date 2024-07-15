@@ -34,6 +34,7 @@
         const f = 100e3; // Schaltfrequenz in Hz
         const T = 1 / f; // Schaltperiode in Sekunden
         const dt = 1e-4; // Zeitschritt
+        const groundVlt = 1; // In Volts
 		
         // Initialbedingungen
         let i_L = 0; // Anfangsstrom durch die Induktivität
@@ -142,8 +143,13 @@
                 this.endX = endX;
                 this.endY = endY;
                 this.knots = knots;
+                //global values:
+                this.maxVoltage = V_in;
+                this.minVoltage = groundVlt;
             }
             
+            adpveSpacing = false;
+
             // Function to draw a wire
             drawWire() {
                 ctx2.beginPath();
@@ -157,15 +163,37 @@
             getDotSpacing(voltage) {
                 return 50 / voltage;
             }
+            getDotColor(value, min, max) {
+                // Ensure the value is within the range
+                if (value < min) value = min;
+                if (value > max) value = max;
+                
+                // Calculate the percentage of the value within the range
+                let percentage = ((value - min) / (max - min));
+                
+                // Convert the percentage to an RGB color between red and yellow
+                // Red is (255, 0, 0) and Yellow is (255, 255, 0)
+                let r = 255; // Red is always 255
+                let g = Math.round(255 * (1-percentage)); 
+                let b = 0; 
+
+                // Convert RGB to hex
+                let hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+                return hex;
+            }
+
             // Function to draw the moving dots along a wire
             drawDots = function (){
                 let dotRadius = 3;
-                let dotColor = 'yellow';
                 let integralCurrent = 0;
                 return function (current, voltage) {
-                    const dotSpacing = this.getDotSpacing(voltage);
+                    let dotSpacing = 50;
+                    let dotColor = this.getDotColor(voltage, this.minVoltage, this.maxVoltage);
                     integralCurrent += current;
-                    integralCurrent = integralCurrent/voltage;
+                    if (this.adpveSpacing){
+                        dotSpacing = this.getDotSpacing(voltage);
+                        integralCurrent = integralCurrent/voltage;
+                    }
                     const dotSpeed = integralCurrent; // Speed of the dots, proportional to current
                     const time = Date.now() / 1000; // Get current time in seconds
 
@@ -311,12 +339,16 @@
                 let startY = this.startY;
                 //hier noch Fakotr hinzufügen
                 let upLeft = new Wire(startX-25,startY,startX,startY, false)
+                upLeft.adpveSpacing = true;
                 upLeft.createWire(current,highVoltage);
                 let upRight = new Wire(startX+25,startY,startX,startY, false)
+                upRight.adpveSpacing = true;
                 upRight.createWire(current,highVoltage);
                 let downLeft = new Wire(startX-25,startY+50,startX,startY+50, false)
+                downLeft.adpveSpacing = true;
                 downLeft.createWire(current,lowVoltage);
                 let downRight = new Wire(startX+25,startY+50,startX,startY+50, false)
+                downRight.adpveSpacing = true;
                 downRight.createWire(current,lowVoltage);
             }
             createResistor(){
@@ -371,41 +403,42 @@
 
         function update() {
             ctx2.clearRect(0, 0, cirquit_canvas.width, cirquit_canvas.height); // Clear canvas
-            let groundVlt = 1; // In Volts
+            
             
             const conversion_factor = 2;
 			let inductorCrt = i_L*conversion_factor;
 			let capacitorCrt = i_C*conversion_factor;
 			let resisitorCrt = inductorCrt - capacitorCrt;
 			let capacitorVlt = groundVlt + v_C;
+            let sourceVlt = groundVlt+ V_in;
             //console.log(spulenStrom); //debug
             //Schalterstrang
-            switch1.createSwitch(q, inductorCrt*q, groundVlt);
-            wire1.createWire(inductorCrt*q, groundVlt);
-            wire2.createWire(inductorCrt*q, groundVlt); // oben links
+            switch1.createSwitch(q, inductorCrt*q, sourceVlt);
+            wire1.createWire(inductorCrt*q, sourceVlt);
+            wire2.createWire(inductorCrt*q, sourceVlt*q + groundVlt*(1-q)); // oben links
             wire17.createWire(inductorCrt*q, groundVlt);
             voltSrc.createVoltSrc();
-            wire3.createWire(inductorCrt*q, groundVlt); // links links
+            wire3.createWire(inductorCrt*q, sourceVlt); // links links
             wire4.createWire(inductorCrt*q, groundVlt); // unten links
             //Diosenstrang
-            wire5.createWire(inductorCrt*(1-q), groundVlt); // oben
+            wire5.createWire(inductorCrt*(1-q), sourceVlt*q + groundVlt*(1-q)); // oben
             wire6.createWire(inductorCrt*(1-q), groundVlt); // unten
             diode.createDiode();
             //Kondensatorstrang
-			wire8.createWire(-capacitorCrt, groundVlt); // mitte rechts
+			wire8.createWire(-capacitorCrt, capacitorVlt); // mitte rechts
             wire15.createWire(capacitorCrt, groundVlt);
             capacitor.createCapacitor(capacitorCrt, capacitorVlt, groundVlt);
             //Spulenstrang
-			wire9.createWire(inductorCrt, groundVlt); // oben mitte
-            wire10.createWire(inductorCrt, groundVlt); // oben mitte
+			wire9.createWire(inductorCrt, sourceVlt*q + groundVlt*(1-q)); //links
+            wire10.createWire(inductorCrt, capacitorVlt); // oben mitte
             wire14.createWire(inductorCrt, groundVlt); // unten mitte
             inductor.drawInductor(400, 50, inductorCrt);
             //Laststrang
             resistor.createResistor();
-            wire7.createWire(resisitorCrt, groundVlt); // unten mitte
+            wire7.createWire(resisitorCrt, capacitorVlt); // unten mitte
 			wire12.createWire(resisitorCrt, groundVlt); // Last oben
             wire16.createWire(resisitorCrt, groundVlt); // Last oben
-			wire13.createWire(resisitorCrt, groundVlt); // Last oben
+			wire13.createWire(resisitorCrt, capacitorVlt); // Last oben
 			
 
             
