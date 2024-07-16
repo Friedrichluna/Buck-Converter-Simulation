@@ -8,34 +8,78 @@
         canvas {
             border: 1px solid black;
         }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: left;
+        }
+        .input-container {
+            margin-bottom: 10px;
+        }
+
+        .input-container label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .input-container input {
+            width: 200px; /* Set a fixed width for the input fields */
+        }
+        .modeButton {
+            display: block;
+            width: 200px;
+            padding: 15px;
+            font-size: 16px;
+            text-align: center;
+            margin: 20px auto;
+            border: none;
+            border-radius: 5px;
+            background-color: #0478e5;
+            color: white;
+            cursor: pointer;
+        }
+        #cirquit_canvas, #plot {
+            margin-bottom: 10px; /* Adjust as needed */
+        }
+        #modeButton.manual {
+            background-color: #6c757d;
+        }
+        
     </style>
 </head>
+
 <body>
 	<div style="display: flex;">
-        <div>
+        <div class="container">
             <canvas id="cirquit_canvas" width="600" height="400"></canvas>
-            <canvas id="plot" width="600" height="600"></canvas>
+            <canvas id="plot" width="600" height="300"></canvas>
         </div>
         <div style="margin-left: 20px;">
-            <div>
-                <label for="automatic_mode">Automatic-Mode: </label>
-                <input type="checkbox" id="automatic_mode" checked>
+            <div class="input-container">
+                <button id="modeButton" class="modeButton">Switch to Manual</button>
             </div>
-            <div>
-                <label for="Resistor">Resitor (Ohm): </label>
+            <div class="input-container">
+                <button id="toggleButton" class="modeButton">Toggle Switch</button>
+            </div>
+            <div class="input-container">
+                <label for="Resistor">Resistor (Ohm):</label>
                 <input type="number" id="resisitanceInput" value="10" step="1">
             </div>
-            <div>
-                <label for="InputVoltage">Input Voltage (V): </label>
+            <div class="input-container">
+                <label for="InputVoltage">Input Voltage (V):</label>
                 <input type="number" id="voltageInput" value="20" step="1">
             </div>
-            <div>
-                <label for="Inductance">Inductance (mH): </label>
+            <div class="input-container">
+                <label for="Inductance">Inductance (mH):</label>
                 <input type="number" id="inductanceInput" value="99" step="10" min="1" max="1000">
             </div>
-            <div>
-                <label for="Inductance">Capacitance (mF): </label>
+            <div class="input-container">
+                <label for="Capacitance">Capacitance (mF):</label>
                 <input type="number" id="capacitanceInput" value="1" step="0.1" min="0.1" max="1000">
+            </div>
+            <div class="input-container">
+                <label for="TogglePeriod">Toggle Period (ms):</label>
+                <input type="number" id="togglePeriodInput" value="300" step="10" min="10" max="1000">
             </div>
         </div>
     </div>
@@ -46,8 +90,7 @@
         let L = 99e-3; // Induktivität in Henry
         let C = 1e-3; // Kapazität in Farad
         let R_load = 10; // Lastwiderstand in Ohm
-        const f = 100e3; // Schaltfrequenz in Hz
-        const T = 1 / f; // Schaltperiode in Sekunden
+        let T = 30; // Schaltperiode in dt
         const dt = 1e-4; // Zeitschritt
         const groundVlt = 1; // In Volts (only for animation purposes, not simulation)
 		
@@ -81,27 +124,35 @@
         });
        
         // Set up event listeners for input changes
-        document.getElementById('automatic_mode').addEventListener('input', function(e) {
-            automatic_mode = e.target.checked;
+        document.getElementById('modeButton').addEventListener('click', function() {
+            automatic_mode = !automatic_mode;
+            this.textContent = automatic_mode ? 'Switch to Manual' : 'Switch to Automatic';
+            this.classList.toggle('manual', !automatic_mode);
         });
-
+        document.getElementById('toggleButton').addEventListener('click', function() {
+            q = 1-q;
+        });
         document.getElementById('resisitanceInput').addEventListener('input', function(e) {
             R_load = parseFloat(e.target.value);
-            if (R_load<0) {R_load = 0;}
+            if (R_load<0 || isNaN(R_load)) {R_load = 0;}
         });
-
         document.getElementById('voltageInput').addEventListener('input', function(e) {
             V_in = parseFloat(e.target.value);
-            if (V_in<0) {V_in = 0;}
+            if (V_in<0 || isNaN(V_in)) {V_in = 0;}
         });
         document.getElementById('inductanceInput').addEventListener('input', function(e) {
             L = 0.001*parseFloat(e.target.value);
-            if (L< 0.001) {L=0.001;}
+            if (L< 0.001 || isNaN(L)) {L=0.001;}
         });
         document.getElementById('capacitanceInput').addEventListener('input', function(e) {
             C = 0.001*parseFloat(e.target.value);
             if (C< 0.001) {C=0.001;}
         });
+        document.getElementById('togglePeriodInput').addEventListener('input', function(e) {
+            T = Math.round(1000*parseFloat(e.target.value)*dt); //input in ms
+            if (T<1) {T=1;}
+        });
+
 
 
         function draw_plot() {
@@ -109,17 +160,18 @@
             const n = 1000; //amount of data beeing displayed
             ctx.clearRect(0, 0, plot_canvas.width, plot_canvas.height);
 
-            const margin = 50;
-            const graphWidth = plot_canvas.width - 2 * margin;
+            const margin = 30;
+            const margin_left = 50;
+            const graphWidth = plot_canvas.width - 2 * margin_left;
             const graphHeight = (plot_canvas.height - 4 * margin) / 3;
 
             // Helper function to plot a graph
             function plotGraph(data, title, yLabel, yMin, yMax, yOffset) {
                 ctx.beginPath();
-                ctx.moveTo(margin, plot_canvas.height - margin - yOffset);
+                ctx.moveTo(margin_left, plot_canvas.height - margin - yOffset);
 
                 data.forEach((point, index) => {
-                    const x = margin + (graphWidth * index) / (data.length - 1);
+                    const x = margin_left + (graphWidth * index) / (data.length - 1);
                     const y = plot_canvas.height - margin - yOffset - ((graphHeight * (point - yMin)) / (yMax - yMin));
                     ctx.lineTo(x, y);
                 });
@@ -150,7 +202,7 @@
 
             if (!breakSimulation) {
                 if (automatic_mode) { //swithces q automaticcally
-                    if (counter > 30){ 
+                    if (counter > T){ 
                         q = 1-q; 
                         counter = 0;
                     }
