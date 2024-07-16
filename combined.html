@@ -79,12 +79,12 @@
             </div>
             <div class="input-container">
                 <label for="TogglePeriod">Toggle Period (ms):</label>
-                <input type="number" id="togglePeriodInput" value="300" step="10" min="10" max="1000">
+                <input type="number" id="togglePeriodInput" value="300" step="10" min="10" max="10000">
             </div>
         </div>
     </div>
     <script>
-        //----------------------------Differenzialgleichung---------------------------------
+    //========================================Differential Equasion=========================================
         // Parameter
         let V_in = 20; // Eingangsspannung in Volt
         let L = 99e-3; // Induktivität in Henry
@@ -106,13 +106,13 @@
 
         // Canvas setup
         const plot_canvas = document.getElementById('plot');
-        const ctx = plot_canvas.getContext('2d');
+        const ctxPlot = plot_canvas.getContext('2d');
 
         let t_total = 0; // Gesamtzeit
         const iL_data = [];
         const vC_data = [];
         const q_data = [];
-
+        //----------------------------Input------------------------------------------------------
         document.addEventListener('keydown', (event) => {
             if (event.key === 'q') {
                 q = 1 - q; // Schaltzustand wechseln
@@ -122,7 +122,6 @@
                 breakSimulation = !breakSimulation; // Pausieren und Fortsetzen der Simulation
             }
         });
-       
         // Set up event listeners for input changes
         document.getElementById('modeButton').addEventListener('click', function() {
             automatic_mode = !automatic_mode;
@@ -154,11 +153,11 @@
         });
 
 
-
+        //----------------------------Plot------------------------------------------------------
         function draw_plot() {
             
             const n = 1000; //amount of data beeing displayed
-            ctx.clearRect(0, 0, plot_canvas.width, plot_canvas.height);
+            ctxPlot.clearRect(0, 0, plot_canvas.width, plot_canvas.height);
 
             const margin = 30;
             const margin_left = 50;
@@ -167,20 +166,20 @@
 
             // Helper function to plot a graph
             function plotGraph(data, title, yLabel, yMin, yMax, yOffset) {
-                ctx.beginPath();
-                ctx.moveTo(margin_left, plot_canvas.height - margin - yOffset);
+                ctxPlot.beginPath();
+                ctxPlot.moveTo(margin_left, plot_canvas.height - margin - yOffset);
 
                 data.forEach((point, index) => {
                     const x = margin_left + (graphWidth * index) / (data.length - 1);
                     const y = plot_canvas.height - margin - yOffset - ((graphHeight * (point - yMin)) / (yMax - yMin));
-                    ctx.lineTo(x, y);
+                    ctxPlot.lineTo(x, y);
                 });
 
-                ctx.stroke();
+                ctxPlot.stroke();
 
                 // Draw labels and title
-                ctx.fillText(title, margin, plot_canvas.height - margin - yOffset - graphHeight - 10);
-                ctx.fillText(yLabel, 10, plot_canvas.height - margin - yOffset - graphHeight / 2);
+                ctxPlot.fillText(title, margin, plot_canvas.height - margin - yOffset - graphHeight - 10);
+                ctxPlot.fillText(yLabel, 10, plot_canvas.height - margin - yOffset - graphHeight / 2);
             }
             const q_data_slice = q_data.slice(-n); //die letzten n werte aus dem Array
             const iL_data_slice = iL_data.slice(-n);
@@ -189,7 +188,7 @@
             const q_last = q_data[q_data.length - 1].toFixed(0); //der letzte Wert
             const iL_last = iL_data[iL_data.length - 1].toFixed(2); 
             const vC_last = vC_data[vC_data.length - 1].toFixed(2);
-            ctx.fillText(`t = ${t_total.toFixed(3)}s`, margin, plot_canvas.height - 20);
+            ctxPlot.fillText(`t = ${t_total.toFixed(3)}s`, margin, plot_canvas.height - 20);
 
 
             plotGraph(q_data_slice, 'Schaltzustand q(t)', `${q_last}`, 0, 1, 0);
@@ -197,9 +196,9 @@
             plotGraph(vC_data_slice, 'Kondensatorspannung v_C(t)', `${vC_last}V`, Math.min(...vC_data), Math.max(...vC_data), 2 * (graphHeight + margin));
         
         }
+        //------------------------solving differential-eqasion----------------------------------------
         function simulate() {
             if (stopSimulation) return;
-
             if (!breakSimulation) {
                 if (automatic_mode) { //swithces q automaticcally
                     if (counter > T){ 
@@ -209,7 +208,6 @@
                     counter = counter+1;
                 }
 				
-
                 const di_L_dt = (V_in * q - v_C) / L;
                 const dv_C_dt = (i_L - v_C / R_load) / C;
                 // Euler-Verfahren zur Lösung der DGLs
@@ -228,13 +226,13 @@
                 vC_data.push(v_C);
                 q_data.push(q);
             }
-            draw_plot();
         }
-        //-----------------------------------Schaltungssimulation--------------------------------------------------------
+    //=====================================Cirquitsimulation========================================
 		// Initialize canvas and context
         const cirquit_canvas = document.getElementById('cirquit_canvas');
-        const ctx2 = cirquit_canvas.getContext('2d');
+        const ctxCirquit = cirquit_canvas.getContext('2d');
 
+        //-------------------------------------FUnctions for drawing wires and components------------------
         class Wire{
             constructor(startX, startY, endX, endY,knots){
                 this.startX = startX;
@@ -250,17 +248,13 @@
             adpveSpacing = false;
 
             // Function to draw a wire
-            drawWire() {
-                ctx2.beginPath();
-                ctx2.lineWidth = 5;
-                ctx2.moveTo(this.startX, this.startY);
-                ctx2.lineTo(this.endX, this.endY);
-                ctx2.strokeStyle = 'black';
-                ctx2.stroke();
-            }
-            // Distance between dots is inversely proportional to voltage
-            getDotSpacing(voltage) {
-                return 50 / voltage;
+            drawWire() { //black rechangle
+                ctxCirquit.beginPath();
+                ctxCirquit.lineWidth = 5;
+                ctxCirquit.moveTo(this.startX, this.startY);
+                ctxCirquit.lineTo(this.endX, this.endY);
+                ctxCirquit.strokeStyle = 'black';
+                ctxCirquit.stroke();
             }
             getDotColor(value, min, max) {
                 // Ensure the value is within the range
@@ -290,7 +284,7 @@
                     let dotColor = this.getDotColor(voltage, this.minVoltage, this.maxVoltage);
                     integralCurrent += current;
                     if (this.adpveSpacing){
-                        dotSpacing = this.getDotSpacing(voltage);
+                        dotSpacing = 50/voltage;
                         integralCurrent = integralCurrent/voltage;
                     }
                     const dotSpeed = integralCurrent; // Speed of the dots, proportional to current
@@ -306,20 +300,20 @@
                         const x = this.startX + Math.cos(angle) * d;
                         const y = this.startY + Math.sin(angle) * d;
                         if (d>0.1){
-                            ctx2.beginPath();
-                            ctx2.arc(x, y, dotRadius, 0, 2 * Math.PI);
-                            ctx2.fillStyle = dotColor;
-                            ctx2.fill();
+                            ctxCirquit.beginPath();
+                            ctxCirquit.arc(x, y, dotRadius, 0, 2 * Math.PI);
+                            ctxCirquit.fillStyle = dotColor;
+                            ctxCirquit.fill();
                         }
                     }
                 }
             }()
-            drawKnot(x, y) {
+            drawKnot(x, y) { //knot at each end of a wire
                 const knotRadius = 5;
-                ctx2.beginPath();
-                ctx2.arc(x, y, knotRadius, 0, 2 * Math.PI);
-                ctx2.fillStyle = 'black';
-                ctx2.fill();
+                ctxCirquit.beginPath();
+                ctxCirquit.arc(x, y, knotRadius, 0, 2 * Math.PI);
+                ctxCirquit.fillStyle = 'black';
+                ctxCirquit.fill();
             }
             // Function to create a wire with moving dots
             createWire(current, voltage) {
@@ -341,12 +335,12 @@
             }
 
             drawWire_(startX,startY,endX,endY) {
-                ctx2.beginPath();
-                ctx2.lineWidth = 5;
-                ctx2.moveTo(startX, startY);
-                ctx2.lineTo(endX, endY);
-                ctx2.strokeStyle = 'black';
-                ctx2.stroke();
+                ctxCirquit.beginPath();
+                ctxCirquit.lineWidth = 5;
+                ctxCirquit.moveTo(startX, startY);
+                ctxCirquit.lineTo(endX, endY);
+                ctxCirquit.strokeStyle = 'black';
+                ctxCirquit.stroke();
             }
             createDiode() {
                 let startX = this.startX;
@@ -357,9 +351,9 @@
                 this.drawWire_(startX-25, startY+50, startX+25, startY+50);
             }
             drawMagneticField(startX, startY, endX, endY, scalingFactor) {
-                ctx2.beginPath();
-                ctx2.lineWidth = 1;
-                ctx2.strokeStyle = 'blue';
+                ctxCirquit.beginPath();
+                ctxCirquit.lineWidth = 1;
+                ctxCirquit.strokeStyle = 'blue';
 
                 const loops = 5; // Number of loops in the inductor
                 const totalLength = endX - startX;
@@ -372,9 +366,8 @@
                     // Draw magnetic field lines around each loop
                     for (let j = 1; j <= scalingFactor; j++) {
                         const offset = j * loopSpacing / (scalingFactor + 1);
-                        // Top part of the loop
-                        ctx2.moveTo(currentX + offset, startY - loopSpacing);
-                        ctx2.bezierCurveTo(
+                        ctxCirquit.moveTo(currentX + offset, startY - loopSpacing);
+                        ctxCirquit.bezierCurveTo(
                             currentX + offset - loopSpacing, startY - loopSpacing * 2, 
                             currentX + offset + loopSpacing, startY - loopSpacing * 2, 
                             currentX + offset + loopSpacing, startY - loopSpacing
@@ -383,15 +376,15 @@
                     currentX += loopSpacing * 2;
                 }
 
-                ctx2.stroke();
+                ctxCirquit.stroke();
             }
 
             drawInductor(endX, endY, current) {
                 let startX = this.startX;
                 let startY = this.startY;
-                ctx2.beginPath();
-                ctx2.lineWidth = 5;
-                ctx2.strokeStyle = 'black';
+                ctxCirquit.beginPath();
+                ctxCirquit.lineWidth = 5;
+                ctxCirquit.strokeStyle = 'black';
 
                 const loops = 5; // Number of loops in the inductor
                 const totalLength = endX - startX;
@@ -400,12 +393,12 @@
                 let currentX = startX;
                 for (let i = 0; i < loops; i++) {
                     // Draw the uper half of the loop
-                    ctx2.arc(currentX + loopSpacing, startY, loopSpacing, Math.PI, 0, false);
+                    ctxCirquit.arc(currentX + loopSpacing, startY, loopSpacing, Math.PI, 0, false);
                     currentX += loopSpacing * 2;
                     
                 }
 
-                ctx2.stroke();
+                ctxCirquit.stroke();
                 this.drawMagneticField(startX, startY, endX, endY, current);
             }
 
@@ -435,7 +428,7 @@
             createCapacitor(current, highVoltage, lowVoltage){
                 let startX = this.startX;
                 let startY = this.startY;
-                //hier noch Fakotr hinzufügen
+
                 let upLeft = new Wire(startX-25,startY,startX,startY, false)
                 upLeft.adpveSpacing = true;
                 upLeft.createWire(current,highVoltage);
@@ -462,14 +455,14 @@
                 let startX = this.startX;
                 let startY = this.startY+radius;
                 
-                ctx2.beginPath();
-                ctx2.arc(startX, startY, radius, 0, 2 * Math.PI);
-                ctx2.fillStyle = 'black';
-                ctx2.stroke();
+                ctxCirquit.beginPath();
+                ctxCirquit.arc(startX, startY, radius, 0, 2 * Math.PI);
+                ctxCirquit.fillStyle = 'black';
+                ctxCirquit.stroke();
             }
         }
-        
-        // Update function to redraw all wires and dots
+        //------------------------------------placing wires and components-----------------------------------
+        //switch-branch
         switch1 = new Component(100,50);
         wire1 = new Wire(50, 50, 100, 50, true);
         wire2 = new Wire(150, 50, 250, 50, true);
@@ -477,21 +470,20 @@
         voltSrc = new Component(50,150);
         wire3 = new Wire(50, 150, 50, 50, true);
         wire4 = new Wire(250, 350, 50, 350, true);
-        //Diodenstrang
+        //diode-brach
         diode = new Component(250, 150);
         wire5 = new Wire(250, 150, 250, 50, true);
         wire6 = new Wire(250, 350, 250, 150, true);
-        
-        //Kondensatorstrang
+        //capacitor-branch
         capacitor = new Component(450, 150);
         wire8 = new Wire(450, 150, 450, 50, false);
         wire15 = new Wire(450,200,450,350,false);
-        //Spulenstrang
+        //inductor-branch (and below)
         inductor = new Component(320, 50);
         wire9 = new Wire(250, 50, 320, 50, true);
         wire10 = new Wire(400, 50, 450, 50, true);
         wire11 = new Wire(450, 50, 550, 50, true);
-        //Last
+        //resistor-branch
         resistor = new Component(550, 150);
         wire7 = new Wire(450, 50, 550, 50, true);
         wire12 = new Wire(550, 350, 450, 350, true);
@@ -499,9 +491,9 @@
         wire16 = new Wire(550, 220, 550, 350, true);
         wire14 = new Wire(450, 350, 250, 350, true);
 
-        function update() {
-            ctx2.clearRect(0, 0, cirquit_canvas.width, cirquit_canvas.height); // Clear canvas
-            
+        //------------------------assingning voltages and currents to Wires and Components----------------------
+        function drawCirquit() {
+            ctxCirquit.clearRect(0, 0, cirquit_canvas.width, cirquit_canvas.height); // Clear canvas
             
             const conversion_factor = 2;
 			let inductorCrt = i_L*conversion_factor;
@@ -509,44 +501,44 @@
 			let resisitorCrt = inductorCrt - capacitorCrt;
 			let capacitorVlt = groundVlt + v_C;
             let sourceVlt = groundVlt+ V_in;
-            //console.log(spulenStrom); //debug
-            //Schalterstrang
+
+            //switch-branch
             switch1.createSwitch(q, inductorCrt*q, sourceVlt);
             wire1.createWire(inductorCrt*q, sourceVlt);
-            wire2.createWire(inductorCrt*q, sourceVlt*q + groundVlt*(1-q)); // oben links
+            wire2.createWire(inductorCrt*q, sourceVlt*q + groundVlt*(1-q)); 
             wire17.createWire(inductorCrt*q, groundVlt);
             voltSrc.createVoltSrc();
-            wire3.createWire(inductorCrt*q, sourceVlt); // links links
-            wire4.createWire(inductorCrt*q, groundVlt); // unten links
-            //Diosenstrang
-            wire5.createWire(inductorCrt*(1-q), sourceVlt*q + groundVlt*(1-q)); // oben
-            wire6.createWire(inductorCrt*(1-q), groundVlt); // unten
+            wire3.createWire(inductorCrt*q, sourceVlt); 
+            wire4.createWire(inductorCrt*q, groundVlt); 
+            //diode-brach
+            wire5.createWire(inductorCrt*(1-q), sourceVlt*q + groundVlt*(1-q)); 
+            wire6.createWire(inductorCrt*(1-q), groundVlt); 
             diode.createDiode();
-            //Kondensatorstrang
-			wire8.createWire(-capacitorCrt, capacitorVlt); // mitte rechts
+            //capacitor-branch
+			wire8.createWire(-capacitorCrt, capacitorVlt); 
             wire15.createWire(capacitorCrt, groundVlt);
             capacitor.createCapacitor(capacitorCrt, capacitorVlt, groundVlt);
-            //Spulenstrang
-			wire9.createWire(inductorCrt, sourceVlt*q + groundVlt*(1-q)); //links
-            wire10.createWire(inductorCrt, capacitorVlt); // oben mitte
-            wire14.createWire(inductorCrt, groundVlt); // unten mitte
+            //inductor-branch (and below)
+			wire9.createWire(inductorCrt, sourceVlt*q + groundVlt*(1-q));
+            wire10.createWire(inductorCrt, capacitorVlt);
+            wire14.createWire(inductorCrt, groundVlt);
             inductor.drawInductor(400, 50, inductorCrt);
-            //Laststrang
+            //resistor-branch
             resistor.createResistor();
-            wire7.createWire(resisitorCrt, capacitorVlt); // unten mitte
-			wire12.createWire(resisitorCrt, groundVlt); // Last oben
-            wire16.createWire(resisitorCrt, groundVlt); // Last oben
-			wire13.createWire(resisitorCrt, capacitorVlt); // Last oben
-            
-			
+            wire7.createWire(resisitorCrt, capacitorVlt);
+			wire12.createWire(resisitorCrt, groundVlt);
+            wire16.createWire(resisitorCrt, groundVlt);
+			wire13.createWire(resisitorCrt, capacitorVlt);
+        }
+    //===========================update simaulation, plot and animation============================
+        function update() {
 			simulate();
+            draw_plot();
+            drawCirquit();
+
             requestAnimationFrame(update);
         }
-
-        
-
-
-        update(); // Start the animation loop
+        update();
     </script>
 </body>
 </html>
