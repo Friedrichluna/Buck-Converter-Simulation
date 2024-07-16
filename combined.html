@@ -276,10 +276,10 @@
             }
 
             // Function to draw the moving dots along a wire
-            drawDots = function (){
+            drawDots = function () {
                 let dotRadius = 3;
-                let integralCurrent = 0;
-                return function (current, voltage) {
+                let integralCurrent = 0; //permanent value
+                return function (current, voltage) { //used to make values permanent
                     let dotSpacing = 50;
                     let dotColor = this.getDotColor(voltage, this.minVoltage, this.maxVoltage);
                     integralCurrent += current;

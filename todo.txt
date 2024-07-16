@@ -1,0 +1,6 @@
+- add readme
+- increase resultion
+- couple html fields with actual values
+- show more graphs (possibly with selection checkbox)
+- remake magnetic-field-animation
+- adapt animation so corners allign correctly (see resistor)
