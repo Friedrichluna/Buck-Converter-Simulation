@@ -7,6 +7,8 @@
 - add TU-Dresden, institute name, and names of collaborators
 - increase resultion
 - couple html fields with actual values
+- add an "apply input" button, so you can adjust mutible the values and apply them at once
+- add an "set current to zero" button
 - show more graphs (possibly with selection checkbox)
 - remake magnetic-field-animation
 - adapt animation so corners allign correctly (see resistor)
