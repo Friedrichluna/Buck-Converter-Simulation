@@ -4,6 +4,7 @@
 
 
 - add readme
+- add TU-Dresden, institute name, and names of collaborators
 - increase resultion
 - couple html fields with actual values
 - show more graphs (possibly with selection checkbox)
