@@ -1,3 +1,8 @@
+- stop and restart einfügen
+- erst starten, nachdem q einmal gedrückt wurde
+- nicht crashen ;)
+
+
 - add readme
 - increase resultion
 - couple html fields with actual values
