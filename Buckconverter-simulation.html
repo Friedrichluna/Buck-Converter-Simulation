@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head> /* rechts Seite Formatierung*/
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buck Converter Simulation</title>
@@ -48,6 +48,7 @@
     </style>
 </head>
 
+/*html-Teil*/
 <body>
 	<div style="display: flex;">
         <div class="container">
@@ -133,7 +134,7 @@
         });
         document.getElementById('resisitanceInput').addEventListener('input', function(e) {
             R_load = parseFloat(e.target.value);
-            if (R_load<0 || isNaN(R_load)) {R_load = 0;}
+            if (R_load<0 || isNaN(R_load)) {R_load = 0.1;}
         });
         document.getElementById('voltageInput').addEventListener('input', function(e) {
             V_in = parseFloat(e.target.value);
@@ -227,7 +228,7 @@
                 q_data.push(q);
             }
         }
-    //=====================================Cirquitsimulation========================================
+    //=====================================CirquitAnimation========================================
 		// Initialize canvas and context
         const cirquit_canvas = document.getElementById('cirquit_canvas');
         const ctxCirquit = cirquit_canvas.getContext('2d');
