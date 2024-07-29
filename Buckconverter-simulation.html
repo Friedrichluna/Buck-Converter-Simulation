@@ -99,11 +99,12 @@
         let i_L = 0; // Anfangsstrom durch die Induktivität
 		let i_C = 0; //Kondensatorstrom
         let v_C = 0; // Anfangsspannung über den Kondensator
-        let q = 1; // Initialer Schaltzustand (geschlossen)
+        let q = 0; // Initialer Schaltzustand (geschlossen)
         let stopSimulation = false; // Flag to stop the simulation
         let breakSimulation = false; // Flag to break the simulation
-		let counter = 0;
-        let automatic_mode = true; // Automatic mode flag
+		let pwmCounter = 0;
+        let automaticMode = true; // Automatic mode flag
+        let startSimulation = false;
 
         // Canvas setup
         const plot_canvas = document.getElementById('plot');
@@ -117,6 +118,7 @@
         document.addEventListener('keydown', (event) => {
             if (event.key === 'q') {
                 q = 1 - q; // Schaltzustand wechseln
+                startSimulation = true;
             } else if (event.key === 's') {
                 stopSimulation = true; // Stoppen der Simulation
             } else if (event.key === 'b') {
@@ -125,12 +127,13 @@
         });
         // Set up event listeners for input changes
         document.getElementById('modeButton').addEventListener('click', function() {
-            automatic_mode = !automatic_mode;
-            this.textContent = automatic_mode ? 'Switch to Manual' : 'Switch to Automatic';
-            this.classList.toggle('manual', !automatic_mode);
+            automaticMode = !automaticMode;
+            this.textContent = automaticMode ? 'Switch to Manual' : 'Switch to Automatic';
+            this.classList.toggle('manual', !automaticMode);
         });
         document.getElementById('toggleButton').addEventListener('click', function() {
             q = 1-q;
+            startSimulation =true;
         });
         document.getElementById('resisitanceInput').addEventListener('input', function(e) {
             R_load = parseFloat(e.target.value);
@@ -200,13 +203,13 @@
         //------------------------solving differential-eqasion----------------------------------------
         function simulate() {
             if (stopSimulation) return;
-            if (!breakSimulation) {
-                if (automatic_mode) { //swithces q automaticcally
-                    if (counter > T){ 
+                if (!breakSimulation){
+                if (automaticMode) { //swithces q automaticcally
+                    if (pwmCounter > T){ 
                         q = 1-q; 
-                        counter = 0;
+                        pwmCounter = 0;
                     }
-                    counter = counter+1;
+                    pwmCounter = pwmCounter+1;
                 }
 				
                 const di_L_dt = (V_in * q - v_C) / L;
@@ -533,11 +536,17 @@
         }
     //===========================update simaulation, plot and animation============================
         function update() {
-			simulate();
-            draw_plot();
-            drawCirquit();
-
-            requestAnimationFrame(update);
+            
+            if(!startSimulation){
+                drawCirquit();
+            }
+			if(startSimulation&&!breakSimulation){
+                simulate();
+                draw_plot();
+                drawCirquit();
+            }
+            requestAnimationFrame(update); //funktion, die von Javascript bereit gestellt wird zum neuladen
+            
         }
         update();
     </script>
