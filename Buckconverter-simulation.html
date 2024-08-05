@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> /* rechts Seite Formatierung*/
+<head> <!--rechts Seite Formatierung-->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buck Converter Simulation</title>
@@ -48,7 +48,7 @@
     </style>
 </head>
 
-/*html-Teil*/
+<!--html-Teil-->
 <body>
 	<div style="display: flex;">
         <div class="container">
@@ -65,15 +65,20 @@
             <div class="input-container">
                 <label for="Resistor">Resistor (Ohm):</label>
                 <input type="number" id="resisitanceInput" value="10" step="1">
+                <span id="errorMessage" style="color: red;"></span>
             </div>
             <div class="input-container">
                 <label for="InputVoltage">Input Voltage (V):</label>
                 <input type="number" id="voltageInput" value="20" step="1">
             </div>
-            <div class="input-container">
+            <!--<form>-->
+                <div class="input-container">
                 <label for="Inductance">Inductance (mH):</label>
-                <input type="number" id="inductanceInput" value="99" step="10" min="1" max="1000">
+                <input type="number" id="inductanceInput" value="99" step="0.1" min="1" max="1000">
+                <!--<input type="submit" class="button_music" value="Bestätigen">-->
             </div>
+            <!--</form>-->
+            
             <div class="input-container">
                 <label for="Capacitance">Capacitance (mF):</label>
                 <input type="number" id="capacitanceInput" value="1" step="0.1" min="0.1" max="1000">
@@ -137,7 +142,14 @@
         });
         document.getElementById('resisitanceInput').addEventListener('input', function(e) {
             R_load = parseFloat(e.target.value);
-            if (R_load<0 || isNaN(R_load)) {R_load = 0.1;}
+            var errorMessage = document.getElementById('errorMessage');
+            if (R_load <= 0 || isNaN(R_load)) {
+                R_load = 0.1;
+                e.target.value = R_load;  // Setze das Eingabefeld auf 0.1
+                errorMessage.textContent = 'Unzulässiger Wert. Der Wert wurde auf 0.1 gesetzt.';
+            } else {
+                errorMessage.textContent = '';  // Leere die Fehlermeldung
+            }
         });
         document.getElementById('voltageInput').addEventListener('input', function(e) {
             V_in = parseFloat(e.target.value);
