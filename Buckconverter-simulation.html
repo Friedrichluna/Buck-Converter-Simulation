@@ -368,7 +368,7 @@
                 this.drawWire_(startX-25, startY, startX+25, startY);
                 this.drawWire_(startX-25, startY+50, startX, startY);
                 this.drawWire_(startX+25, startY+50, startX, startY);
-                this.drawWire_(startX-25, startY+50, startX+25, startY+50);
+                this.drawWire_(startX-25, startY+48, startX+25, startY+48);
             }
             drawMagneticField(startX, startY, endX, endY, scalingFactor) {
                 ctxCirquit.beginPath();
@@ -465,10 +465,10 @@
             createResistor(){
                 let startX = this.startX;
                 let startY = this.startY;
-                this.drawWire_(startX-15,startY,startX+15,startY); //up
+                this.drawWire_(startX-18,startY,startX+18,startY); //up
                 this.drawWire_(startX+15,startY,startX+15,startY+70, false); //right
                 this.drawWire_(startX-15,startY,startX-15,startY+70, false); //left
-                this.drawWire_(startX-15,startY+70,startX+15,startY+70, false); //down
+                this.drawWire_(startX-18,startY+70,startX+18,startY+70, false); //down
             }
             createVoltSrc(){
                 const radius = 30;
