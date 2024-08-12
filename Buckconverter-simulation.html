@@ -43,7 +43,20 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             margin: 20px auto;
             border: none;
             border-radius: 5px;
-            background-color: #0478e5;
+            background-color: blue;
+            color: white;
+            cursor: pointer;
+        }
+        .breakButton {
+            display: block;
+            width: 200px;
+            padding: 15px;
+            font-size: 16px;
+            text-align: center;
+            margin: 20px auto;
+            border: none;
+            border-radius: 5px;
+            background-color: red;
             color: white;
             cursor: pointer;
         }
@@ -51,7 +64,10 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             margin-bottom: 10px; /* Adjust as needed */
         }
         #modeButton.manual {
-            background-color: #6c757d;
+            background-color: grey;
+        }
+        #breakButton.run{
+            background-color: green;
         }
         
     </style>
@@ -70,6 +86,9 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             </div>
             <div class="input-container">
                 <button id="toggleButton" class="modeButton">Toggle Switch</button>
+            </div>
+            <div class="input-container">
+                <button id="breakButton" class="breakButton">Break</button>
             </div>
             <div class="input-container">
                 <label for="Resistor">Resistor (Ohm):</label>
@@ -147,6 +166,11 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
         document.getElementById('toggleButton').addEventListener('click', function() {
             q = 1-q;
             startSimulation =true;
+        });
+        document.getElementById('breakButton').addEventListener('click', function() {
+            breakSimulation = !breakSimulation;
+            this.textContent = breakSimulation ? 'Run' : 'Break';
+            this.classList.toggle('run', breakSimulation); //ruft Befehl zum Farbwechsel des breakButtons auf
         });
         document.getElementById('resisitanceInput').addEventListener('input', function(e) {
             R_load = parseFloat(e.target.value);
