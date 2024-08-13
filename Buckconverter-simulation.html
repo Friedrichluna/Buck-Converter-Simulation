@@ -47,23 +47,16 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             color: white;
             cursor: pointer;
         }
-        .breakButton {
-            display: block;
-            width: 200px;
-            padding: 15px;
-            font-size: 16px;
-            text-align: center;
-            margin: 20px auto;
-            border: none;
-            border-radius: 5px;
+        #breakButton {
             background-color: red;
-            color: white;
-            cursor: pointer;
         }
         #cirquit_canvas, #plot {
             margin-bottom: 10px; /* Adjust as needed */
         }
         #modeButton.manual {
+            background-color: grey;
+        }
+        #toggleButton.manual {
             background-color: grey;
         }
         #breakButton.run{
@@ -85,10 +78,10 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 <button id="modeButton" class="modeButton">Switch to Manual</button>
             </div>
             <div class="input-container">
-                <button id="toggleButton" class="modeButton">Toggle Switch</button>
+                <button id="toggleButton" class="modeButton">SwitchOn</button>
             </div>
             <div class="input-container">
-                <button id="breakButton" class="breakButton">Break</button>
+                <button id="breakButton" class="modeButton">Break</button>
             </div>
             <div class="input-container">
                 <label for="Resistor">Resistor (Ohm):</label>
@@ -160,8 +153,9 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
         // Set up event listeners for input changes
         document.getElementById('modeButton').addEventListener('click', function() {
             automaticMode = !automaticMode;
-            this.textContent = automaticMode ? 'Switch to Manual' : 'Switch to Automatic';
+            this.textContent = automaticMode ? 'Switch to ManualMode' : 'Switch to AutomaticMode';
             this.classList.toggle('manual', !automaticMode);
+            //toggleButton.classList.toggle('manual');
         });
         document.getElementById('toggleButton').addEventListener('click', function() {
             q = 1-q;
@@ -169,15 +163,15 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
         });
         document.getElementById('breakButton').addEventListener('click', function() {
             breakSimulation = !breakSimulation;
-            this.textContent = breakSimulation ? 'Run' : 'Break';
+            this.textContent = breakSimulation ? 'Run' : 'Break'; //ändert die Textanzeige des breakButtons
             this.classList.toggle('run', breakSimulation); //ruft Befehl zum Farbwechsel des breakButtons auf
         });
         document.getElementById('resisitanceInput').addEventListener('input', function(e) {
             R_load = parseFloat(e.target.value);
             if (R_load <= 0 || isNaN(R_load)) {
                 R_load = 0.1;
-                e.target.value = R_load;
-              }  // Setze das Eingabefeld auf 0.1
+                e.target.value = R_load;// Setze das Eingabefeld auf 0.1
+              }  
         });
         document.getElementById('voltageInput').addEventListener('input', function(e) {
             V_in = parseFloat(e.target.value);
@@ -205,6 +199,9 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             if (T<1) {T=1;}
         });
 
+        function updateToggleButtonText() {//Ändert den Text des ToggleButton (gekoppelt mit dem Switch-Schaltymbol, s.u.)
+            toggleButton.textContent = q === 0 ? 'SwitchOn' : 'SwitchOff';
+        }
 
         //----------------------------Plot------------------------------------------------------
         function draw_plot() {
@@ -465,11 +462,13 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                     shiftY = 0;
                     shiftX = 0;
                     knots = true;
+                    updateToggleButtonText();
                 }
                 else{
                     shiftY = 30;
                     shiftX = 5;
                     knots = false;
+                    updateToggleButtonText();
                 }
                 this.endX = startX+50-shiftX;
                 this.endY = startY-shiftY;
