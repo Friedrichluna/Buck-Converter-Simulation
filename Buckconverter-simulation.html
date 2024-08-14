@@ -103,6 +103,10 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 <label for="TogglePeriod">Toggle Period (ms):</label>
                 <input type="number" id="togglePeriodInput" value ="30"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
             </div>
+            <div class="input-container">
+                <label for="DutyCycle">Duty Cycle (T_ein/T):</label>
+                <input type="number" id="dutyCycleInput" value ="0.5" step="0.1"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
+            </div>
         </div>
     </div>
     <script>
@@ -113,6 +117,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
         let C = 1e-3; // Kapazität in Farad
         let R_load = 10; // Lastwiderstand in Ohm
         let T = 30; // Schaltperiode in dt
+        let D = 0.5; //DutyCycle = T_ein/T
         const dt = 1e-4; // Zeitschritt
         const groundVlt = 1; // In Volts (only for animation purposes, not simulation)
 		
@@ -123,7 +128,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
         let q = 0; // Initialer Schaltzustand (geschlossen)
         let stopSimulation = false; // Flag to stop the simulation
         let breakSimulation = false; // Flag to break the simulation
-		let pwmCounter = 0;
+		let pwmCounter = 0; //Zähler, um im automaticMode eine Periodendauer abzuzählen
         let automaticMode = true; // Automatic mode flag
         let startSimulation = false;
 
@@ -198,6 +203,17 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 e.target.value =T;
             }
         });
+        document.getElementById('dutyCycleInput').addEventListener('input', function(e) {
+            D =parseFloat(e.target.value);
+            if (D<0 ||isNaN(T)) {
+                D=0;
+                e.target.value =D;
+            }
+            if(D>1){
+                D=1;
+                e.target.value =D;
+            }
+        });
 
         //Ändert den Text des ToggleButton (gekoppelt mit dem Switch-Schaltymbol, s.u.)
         function updateToggleButtonText() {
@@ -251,10 +267,11 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
         function simulate() {
             if (stopSimulation) return;
                 if (!breakSimulation){
-                if (automaticMode) { //swithces q automaticcally
-                    if (pwmCounter > T/2){ 
-                        q = 1-q; 
-                        pwmCounter = 0;
+                if (automaticMode) { //switches q automatically
+                    if(pwmCounter < (D*T)){q=1;}
+                    if((D*T) < pwmCounter && pwmCounter < T){q=0;}
+                    if(pwmCounter==T){
+                        pwmCounter=0;
                     }
                     pwmCounter = pwmCounter+1;
                 }
