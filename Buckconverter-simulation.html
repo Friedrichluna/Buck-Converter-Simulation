@@ -85,27 +85,23 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             </div>
             <div class="input-container">
                 <label for="Resistor">Resistor (Ohm):</label>
-                <input type="number" id="resisitanceInput" value="10">
+                <input type="number" id="resisitanceInput" value="10"> <!--value hardgecodet, sollte möglicht der Wert von R sein-->
             </div>
             <div class="input-container">
                 <label for="InputVoltage">Input Voltage (V):</label>
-                <input type="number" id="voltageInput" value="20">
+                <input type="number" id="voltageInput" value="20"> <!--value hardgecodet, sollte möglicht der Wert von V_in sein-->
             </div>
-            <!--<form>-->
                 <div class="input-container">
                 <label for="Inductance">Inductance (mH):</label>
-                <input type="number" id="inductanceInput" value="99" >
-                <!--<input type="submit" class="button_music" value="Bestätigen">-->
-            </div>
-            <!--</form>-->
-            
+                <input type="number" id="inductanceInput" value="99" > <!--value hardgecodet, sollte möglicht der Wert von L sein-->
+            </div> 
             <div class="input-container">
                 <label for="Capacitance">Capacitance (mF):</label>
-                <input type="number" id="capacitanceInput" value="1">
+                <input type="number" id="capacitanceInput" value="1"> <!--value hardgecodet, sollte möglicht der Wert von C sein-->
             </div>
             <div class="input-container">
                 <label for="TogglePeriod">Toggle Period (ms):</label>
-                <input type="number" id="togglePeriodInput" value="300">
+                <input type="number" id="togglePeriodInput" value ="30"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
             </div>
         </div>
     </div>
@@ -139,6 +135,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
         const iL_data = [];
         const vC_data = [];
         const q_data = [];
+  
         //----------------------------Input------------------------------------------------------
         document.addEventListener('keydown', (event) => {
             if (event.key === 'q') {
@@ -155,7 +152,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             automaticMode = !automaticMode;
             this.textContent = automaticMode ? 'Switch to ManualMode' : 'Switch to AutomaticMode';
             this.classList.toggle('manual', !automaticMode);
-            //toggleButton.classList.toggle('manual');
+            //toggleButton.classList.toggle('manual'); //sorgt dafür, dass der toggleButton im maual-Mode auch grau wird
         });
         document.getElementById('toggleButton').addEventListener('click', function() {
             q = 1-q;
@@ -196,10 +193,14 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
         });
         document.getElementById('togglePeriodInput').addEventListener('input', function(e) {
             T = Math.round(1000*parseFloat(e.target.value)*dt); //input in ms
-            if (T<1) {T=1;}
+            if (T<1 ||isNaN(T)) {
+                T=1;
+                e.target.value =T;
+            }
         });
 
-        function updateToggleButtonText() {//Ändert den Text des ToggleButton (gekoppelt mit dem Switch-Schaltymbol, s.u.)
+        //Ändert den Text des ToggleButton (gekoppelt mit dem Switch-Schaltymbol, s.u.)
+        function updateToggleButtonText() {
             toggleButton.textContent = q === 0 ? 'SwitchOn' : 'SwitchOff';
         }
 
@@ -251,7 +252,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             if (stopSimulation) return;
                 if (!breakSimulation){
                 if (automaticMode) { //swithces q automaticcally
-                    if (pwmCounter > T){ 
+                    if (pwmCounter > T/2){ 
                         q = 1-q; 
                         pwmCounter = 0;
                     }

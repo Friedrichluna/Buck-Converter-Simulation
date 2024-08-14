@@ -1,8 +1,3 @@
-- stop and restart einfügen
-- erst starten, nachdem q einmal gedrückt wurde
-- nicht crashen ;)
-
-
 - add readme
 - add TU-Dresden, institute name, and names of collaborators
 - increase resultion
