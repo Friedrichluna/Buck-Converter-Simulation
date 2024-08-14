@@ -43,7 +43,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             margin: 20px auto;
             border: none;
             border-radius: 5px;
-            background-color: blue;
+            background-color: rgb(0, 89, 255);
             color: white;
             cursor: pointer;
         }
@@ -84,7 +84,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 <button id="breakButton" class="modeButton">Break</button>
             </div>
             <div class="input-container">
-                <label for="Resistor">Resistor (Ohm):</label>
+                <label for="Resistor">Resistor (&Omega;):</label>
                 <input type="number" id="resisitanceInput" value="10"> <!--value hardgecodet, sollte möglicht der Wert von R sein-->
             </div>
             <div class="input-container">
@@ -100,11 +100,11 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 <input type="number" id="capacitanceInput" value="1"> <!--value hardgecodet, sollte möglicht der Wert von C sein-->
             </div>
             <div class="input-container">
-                <label for="TogglePeriod">Toggle Period (ms):</label>
+                <label for="TogglePeriod"> Period Duration (ms):</label>
                 <input type="number" id="togglePeriodInput" value ="30"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
             </div>
             <div class="input-container">
-                <label for="DutyCycle">Duty Cycle (T_ein/T):</label>
+                <label for="DutyCycle">Duty Cycle (T<sub>ein</sub>/T):</label>
                 <input type="number" id="dutyCycleInput" value ="0.5" step="0.1"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
             </div>
         </div>
@@ -197,7 +197,8 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             }
         });
         document.getElementById('togglePeriodInput').addEventListener('input', function(e) {
-            T = Math.round(1000*parseFloat(e.target.value)*dt); //input in ms
+            T = Math.round(10000*parseFloat(e.target.value)*dt); //input in ms
+            console.log('T:', T);
             if (T<1 ||isNaN(T)) {
                 T=1;
                 e.target.value =T;
@@ -205,7 +206,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
         });
         document.getElementById('dutyCycleInput').addEventListener('input', function(e) {
             D =parseFloat(e.target.value);
-            if (D<0 ||isNaN(T)) {
+            if (D<0 ||isNaN(D)) {
                 D=0;
                 e.target.value =D;
             }
@@ -260,7 +261,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
 
             plotGraph(q_data_slice, 'Schaltzustand q(t)', `${q_last}`, 0, 1, 0);
             plotGraph(iL_data_slice, 'Spulenstrom i_L(t)', `${iL_last}A`, Math.min(...iL_data), Math.max(...iL_data), graphHeight + margin);
-            plotGraph(vC_data_slice, 'Kondensatorspannung v_C(t)', `${vC_last}V`, Math.min(...vC_data), Math.max(...vC_data), 2 * (graphHeight + margin));
+            plotGraph(vC_data_slice, 'Ausgangsspannung = Kondensatorspannung v_C(t)', `${vC_last}V`, Math.min(...vC_data), Math.max(...vC_data), 2 * (graphHeight + margin));
         
         }
         //------------------------solving differential-eqasion----------------------------------------
@@ -270,9 +271,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 if (automaticMode) { //switches q automatically
                     if(pwmCounter < (D*T)){q=1;}
                     if((D*T) < pwmCounter && pwmCounter < T){q=0;}
-                    if(pwmCounter==T){
-                        pwmCounter=0;
-                    }
+                    if(pwmCounter===T){pwmCounter=0;}
                     pwmCounter = pwmCounter+1;
                 }
 				
