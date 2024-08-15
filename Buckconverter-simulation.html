@@ -3,13 +3,13 @@
 Steuerung möglich über Tasteneingaben:
 q = Wechseln des Schalterzustands
 b = Pausieren und Weiterlaufen lassen
+r = restart der Anzeige
 
-Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
--->
+Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
 
 <!DOCTYPE html>
 <html lang="en">
-<head> <!--rechts Seite Formatierung-->
+<head> <!--rechte Seite Formatierung-->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buck Converter Simulation</title>
@@ -104,11 +104,15 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             </div>
             <div class="input-container">
                 <label for="PeriodDuration"> Period Duration (ms):</label>
-                <input type="number" id="periodDuration" value ="30"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
+                <input type="number" id="periodDurationInput" value ="30"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
             </div>
             <div class="input-container">
                 <label for="DutyCycle">Duty Cycle (T<sub>ein</sub>/T):</label>
                 <input type="number" id="dutyCycleInput" value ="0.5" step="0.1"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
+            </div>
+            <div class="input-container">
+                <label for="referenceVoltage">Reference Voltage (V):</label>
+                <input type="number" id="referenceVoltageInput" value ="5"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
             </div>
         </div>
     </div>
@@ -121,6 +125,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
         let R_load = 10; // Lastwiderstand in Ohm
         let T = 30; // Schaltperiode in dt
         let D = 0.5; //DutyCycle = T_ein/T
+        let V_ref = 5;// Referenzspannung in Volt
         const dt = 1e-4; // Zeitschritt
         const groundVlt = 1; // In Volts (only for animation purposes, not simulation)
 		
@@ -182,7 +187,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             this.classList.toggle('run', breakSimulation); //ruft Befehl zum Farbwechsel des breakButtons auf
         });
         document.getElementById('resistanceInput').addEventListener('input', function(e) {
-            R_load = parseFloat(e.target.value);
+            R_load = parseFloat(e.target.value);//falls R_load kleiner 0 oder keine Zahl ist
             if (R_load <= 0 || isNaN(R_load)) {
                 R_load = 0.1;
                 e.target.value = R_load;// Setze das Eingabefeld auf 0.1
@@ -228,8 +233,14 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 e.target.value =D;
             }
         });
-        
-        //--------------------Funktionen zur Mainpulation der Anzeigen------------------------------------------------------
+        document.getElementById('referenceVoltageInput').addEventListener('click', function() {
+            V_ref = parent(e.target.value);
+            if(V_ref<0 ||isNaN(V_ref)){
+                V_ref = 0;
+                e.target.value = V_ref;
+            }
+        });
+        //--------------------Funktionen zur Mainpulation der Anzeigen---------------------------
         
         //Ändert den Text des ToggleButton (gekoppelt mit dem Switch-Schaltymbol, s.u.)
         function updateToggleButtonText() {
@@ -242,9 +253,11 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             L = 99e-3; // Induktivität in Henry
             C = 1e-3; // Kapazität in Farad
             R_load = 10; // Lastwiderstand in Ohm
+            V_ref = 5; //Referenzspannung in Volt
             T = 30; // Schaltperiode in dt
             D = 0.5; //DutyCycle = T_ein/T
             t_total = 0; // Gesamtzeit
+
 
             i_L = 0; // Anfangsstrom durch die Induktivität
             i_C = 0; //Kondensatorstrom
@@ -262,6 +275,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             document.getElementById('capacitanceInput').value = C*1000;//Anzeige in mF
             document.getElementById('periodDurationInput').value = T;
             document.getElementById('dutyCycleInput').value = D;
+            document.getElementById('referenceVoltageInput').value = V_ref;
             
             //Bisherige Graphen löschen 
             ctxPlot.clearRect(0, 0, plot_canvas.width, plot_canvas.height); //löscht alle Anzeigen aus dem Plot, auch Text usw.
@@ -274,8 +288,13 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
         function draw_plot() {
             const n = 1000; //amount of data beeing displayed
             ctxPlot.clearRect(0, 0, plot_canvas.width, plot_canvas.height);
+            
+           /** //const vC_last =  vC_data[vC_data.length - 1].toFixed(2);
+            const vC_min = Math.min(...vC_data);
+            const vC_max = Math.max(...vC_data);
+            */
 
-            const margin = 30;
+            const margin = 30; //damit die Plots nicht direkt am Rand des Canvas liegen
             const margin_left = 50;
             const graphWidth = plot_canvas.width - 2 * margin_left;
             const graphHeight = (plot_canvas.height - 4 * margin) / 3;
@@ -297,20 +316,44 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 ctxPlot.fillText(title, margin, plot_canvas.height - margin - yOffset - graphHeight - 10);
                 ctxPlot.fillText(yLabel, 10, plot_canvas.height - margin - yOffset - graphHeight / 2);
             }
+
+            /**function plotReferenceLine(yOffset) {
+                ctxPlot.strokeStyle = 'red'; // Farbe der Referenzlinie
+                ctxPlot.beginPath();
+                const y = plot_canvas.height - margin - yOffset - ((graphHeight * (V_ref - yMin)) / (yMax - yMin));
+                ctxPlot.moveTo(margin_left, y);
+                ctxPlot.lineTo(margin_left + graphWidth, y);
+                ctxPlot.stroke();
+                ctxPlot.strokeStyle = 'black'; // Zurücksetzen auf Standardfarbe für andere Plots
+            }*/
+
             const q_data_slice = q_data.slice(-n); //die letzten n werte aus dem Array
             const iL_data_slice = iL_data.slice(-n);
             const vC_data_slice = vC_data.slice(-n);
 
             const q_last = q_data[q_data.length - 1].toFixed(0); //der letzte Wert
-            const iL_last = iL_data[iL_data.length - 1].toFixed(2); 
-            const vC_last = vC_data[vC_data.length - 1].toFixed(2);
+            const iL_last = iL_data[iL_data.length - 1].toFixed(2); //gibt den letzten Wert aus vC_Data auf zwei Stellen gerundet zurück
+            const vC_last = vC_data[vC_data.length - 1].toFixed(2); 
+            const vC_min = Math.min(...vC_data);
+            const vC_max = Math.max(...vC_data);
+
+            function plotReferenceLine(yOffset) {
+                ctxPlot.strokeStyle = 'red'; // Farbe der Referenzlinie
+                ctxPlot.beginPath();
+                const y = plot_canvas.height - margin - yOffset - ((graphHeight * (V_ref - yMin)) / (yMax - yMin));
+                ctxPlot.moveTo(margin_left, y);
+                ctxPlot.lineTo(margin_left + graphWidth, y);
+                ctxPlot.stroke();
+                ctxPlot.strokeStyle = 'black'; // Zurücksetzen auf Standardfarbe für andere Plots
+            }
             ctxPlot.fillText(`t = ${t_total.toFixed(3)}s`, margin, plot_canvas.height - 20);
 
             plotGraph(q_data_slice, 'Schaltzustand q(t)', `${q_last}`, 0, 1, 0);
             plotGraph(iL_data_slice, 'Spulenstrom i_L(t)', `${iL_last}A`, Math.min(...iL_data), Math.max(...iL_data), graphHeight + margin);
             plotGraph(vC_data_slice, 'Ausgangsspannung = Kondensatorspannung v_C(t)', `${vC_last}V`, Math.min(...vC_data), Math.max(...vC_data), 2 * (graphHeight + margin));
-        
+            //plotReferenceLine(2 * (graphHeight + margin)); // Zeichnet die rote Linie für V_ref
         }
+
         //------------------------solving differential-eqasion----------------------------------------
         function simulate() {
             if (stopSimulation) return;
