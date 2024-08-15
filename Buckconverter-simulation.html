@@ -81,11 +81,14 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 <button id="toggleButton" class="modeButton">SwitchOn</button>
             </div>
             <div class="input-container">
+                <button id="restartButton" class="modeButton">Restart</button>
+            </div>
+            <div class="input-container">
                 <button id="breakButton" class="modeButton">Break</button>
             </div>
             <div class="input-container">
                 <label for="Resistor">Resistor (&Omega;):</label>
-                <input type="number" id="resisitanceInput" value="10"> <!--value hardgecodet, sollte möglicht der Wert von R sein-->
+                <input type="number" id="resistanceInput" value="10"> <!--value hardgecodet, sollte möglicht der Wert von R sein-->
             </div>
             <div class="input-container">
                 <label for="InputVoltage">Input Voltage (V):</label>
@@ -100,8 +103,8 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 <input type="number" id="capacitanceInput" value="1"> <!--value hardgecodet, sollte möglicht der Wert von C sein-->
             </div>
             <div class="input-container">
-                <label for="TogglePeriod"> Period Duration (ms):</label>
-                <input type="number" id="togglePeriodInput" value ="30"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
+                <label for="PeriodDuration"> Period Duration (ms):</label>
+                <input type="number" id="periodDuration" value ="30"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
             </div>
             <div class="input-container">
                 <label for="DutyCycle">Duty Cycle (T<sub>ein</sub>/T):</label>
@@ -125,12 +128,13 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
         let i_L = 0; // Anfangsstrom durch die Induktivität
 		let i_C = 0; //Kondensatorstrom
         let v_C = 0; // Anfangsspannung über den Kondensator
-        let q = 0; // Initialer Schaltzustand (geschlossen)
+        let q = 0; // Initialer Schaltzustand (offen)
+        let pwmCounter = 0; //Zähler, um im automaticMode eine Periodendauer abzuzählen
         let stopSimulation = false; // Flag to stop the simulation
         let breakSimulation = false; // Flag to break the simulation
-		let pwmCounter = 0; //Zähler, um im automaticMode eine Periodendauer abzuzählen
-        let automaticMode = true; // Automatic mode flag
+		let automaticMode = true; // Automatic mode flag
         let startSimulation = false;
+        //let restartSimulation =false;
 
         // Canvas setup
         const plot_canvas = document.getElementById('plot');
@@ -140,8 +144,11 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
         const iL_data = [];
         const vC_data = [];
         const q_data = [];
-  
+        //}
+
         //----------------------------Input------------------------------------------------------
+        
+        //Funktion, um mit verschiedenen Tastatur-Eingaben Steuerungen der Simulation vorzunehmen
         document.addEventListener('keydown', (event) => {
             if (event.key === 'q') {
                 q = 1 - q; // Schaltzustand wechseln
@@ -150,8 +157,11 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 stopSimulation = true; // Stoppen der Simulation
             } else if (event.key === 'b') {
                 breakSimulation = !breakSimulation; // Pausieren und Fortsetzen der Simulation
+            } else if(event.key === 'r'){
+                restartSimulation();
             }
         });
+
         // Set up event listeners for input changes
         document.getElementById('modeButton').addEventListener('click', function() {
             automaticMode = !automaticMode;
@@ -163,12 +173,15 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             q = 1-q;
             startSimulation =true;
         });
+        document.getElementById('restartButton').addEventListener('click', function() {
+            restartSimulation();
+        });
         document.getElementById('breakButton').addEventListener('click', function() {
             breakSimulation = !breakSimulation;
             this.textContent = breakSimulation ? 'Run' : 'Break'; //ändert die Textanzeige des breakButtons
             this.classList.toggle('run', breakSimulation); //ruft Befehl zum Farbwechsel des breakButtons auf
         });
-        document.getElementById('resisitanceInput').addEventListener('input', function(e) {
+        document.getElementById('resistanceInput').addEventListener('input', function(e) {
             R_load = parseFloat(e.target.value);
             if (R_load <= 0 || isNaN(R_load)) {
                 R_load = 0.1;
@@ -196,7 +209,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 e.target.value = C;
             }
         });
-        document.getElementById('togglePeriodInput').addEventListener('input', function(e) {
+        document.getElementById('periodDurationInput').addEventListener('input', function(e) {
             T = Math.round(10000*parseFloat(e.target.value)*dt); //input in ms
             console.log('T:', T);
             if (T<1 ||isNaN(T)) {
@@ -215,15 +228,50 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 e.target.value =D;
             }
         });
-
+        
+        //--------------------Funktionen zur Mainpulation der Anzeigen------------------------------------------------------
+        
         //Ändert den Text des ToggleButton (gekoppelt mit dem Switch-Schaltymbol, s.u.)
         function updateToggleButtonText() {
             toggleButton.textContent = q === 0 ? 'SwitchOn' : 'SwitchOff';
         }
 
+        //Funktion zum Zurücksetzen aller Einstellungen und Anzeigen auf den Anfangszustand (außer modeButton (bzw. AutomaticMode) und breakButton (bzw. breakSimulation))
+        function restartSimulation(){
+            V_in = 20; // Eingangsspannung in Volt
+            L = 99e-3; // Induktivität in Henry
+            C = 1e-3; // Kapazität in Farad
+            R_load = 10; // Lastwiderstand in Ohm
+            T = 30; // Schaltperiode in dt
+            D = 0.5; //DutyCycle = T_ein/T
+            t_total = 0; // Gesamtzeit
+
+            i_L = 0; // Anfangsstrom durch die Induktivität
+            i_C = 0; //Kondensatorstrom
+            v_C = 0; // Anfangsspannung über den Kondensator
+            q = 0; // Initialer Schaltzustand (geschlossen)
+            stopSimulation = false; // Flag to stop the simulation
+            pwmCounter = 0; //Zähler, um im automaticMode eine Periodendauer abzuzählen
+            startSimulation = false;
+
+            // Anzeigen der Eingabefelder zurücksetzen 
+            //document.getElementById('modeButton').classList.toggle('manual');
+            document.getElementById('voltageInput').value = V_in;
+            document.getElementById('resistanceInput').value = R_load;
+            document.getElementById('inductanceInput').value = L*1000;// Anzeige in mH
+            document.getElementById('capacitanceInput').value = C*1000;//Anzeige in mF
+            document.getElementById('periodDurationInput').value = T;
+            document.getElementById('dutyCycleInput').value = D;
+            
+            //Bisherige Graphen löschen 
+            ctxPlot.clearRect(0, 0, plot_canvas.width, plot_canvas.height); //löscht alle Anzeigen aus dem Plot, auch Text usw.
+            iL_data.splice(0, iL_data.length);
+            q_data.splice(0, q_data.length);
+            vC_data.splice(0, vC_data.length);
+        }
+
         //----------------------------Plot------------------------------------------------------
         function draw_plot() {
-            
             const n = 1000; //amount of data beeing displayed
             ctxPlot.clearRect(0, 0, plot_canvas.width, plot_canvas.height);
 
@@ -257,7 +305,6 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
             const iL_last = iL_data[iL_data.length - 1].toFixed(2); 
             const vC_last = vC_data[vC_data.length - 1].toFixed(2);
             ctxPlot.fillText(`t = ${t_total.toFixed(3)}s`, margin, plot_canvas.height - 20);
-
 
             plotGraph(q_data_slice, 'Schaltzustand q(t)', `${q_last}`, 0, 1, 0);
             plotGraph(iL_data_slice, 'Spulenstrom i_L(t)', `${iL_last}A`, Math.min(...iL_data), Math.max(...iL_data), graphHeight + margin);
@@ -294,6 +341,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 q_data.push(q);
             }
         }
+
     //=====================================CirquitAnimation========================================
 		// Initialize canvas and context
         const cirquit_canvas = document.getElementById('cirquit_canvas');
@@ -600,8 +648,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
 			wire13.createWire(resisitorCrt, capacitorVlt);
         }
     //===========================update simaulation, plot and animation============================
-        function update() {
-            
+        function update() {            
             if(!startSimulation){
                 drawCirquit();
             }
@@ -610,10 +657,9 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website
                 draw_plot();
                 drawCirquit();
             }
-            requestAnimationFrame(update); //funktion, die von Javascript bereit gestellt wird zum neuladen
-            
+            requestAnimationFrame(update); //funktion, die von Javascript bereit gestellt wird zum neuladen  
         }
-        update();
+        update(); //wird permanent aufgerufen
     </script>
 </body>
 </html>
