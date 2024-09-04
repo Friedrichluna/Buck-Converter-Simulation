@@ -234,8 +234,8 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
             }
         });
         document.getElementById('referenceVoltageInput').addEventListener('click', function() {
-            V_ref = parent(e.target.value);
-            if(V_ref<0 ||isNaN(V_ref)){
+            V_ref = parseFloat(e.target.value);
+            if(V_ref<0 || isNaN(V_ref)){
                 V_ref = 0;
                 e.target.value = V_ref;
             }
@@ -287,21 +287,18 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
         //----------------------------Plot------------------------------------------------------
         function draw_plot() {
             const n = 1000; //amount of data beeing displayed
+            V_ref = document.getElementById('referenceVoltageInput').value; 
+            const showReference =true;
             ctxPlot.clearRect(0, 0, plot_canvas.width, plot_canvas.height);
-
+            
             const margin = 30; //damit die Plots nicht direkt am Rand des Canvas liegen
             const margin_left = 50;
             const graphWidth = plot_canvas.width - 2 * margin_left;
             const graphHeight = (plot_canvas.height - 4 * margin) / 3;
 
-            /** //const vC_last =  vC_data[vC_data.length - 1].toFixed(2);
-            const vC_min = Math.min(...vC_data);
-            const vC_max = Math.max(...vC_data);
-            */
-
             // Helper function to plot a graph
             //data: Array der zu plottenden Daten, title, yLabel, yMin, yMax: Minimum und Maximum der y-Achse, um die Skalierung zu definieren, yOffset: Der vertikale Versatz, der angibt, wo der Graph auf dem Canvas beginnen soll
-            function plotGraph(data, title, yLabel, yMin, yMax, yOffset) {
+            function plotGraph(data, title, yLabel, yMin, yMax, yOffset, showReference=false, refValue =0) {
                 ctxPlot.beginPath();
                 ctxPlot.moveTo(margin_left, plot_canvas.height - margin - yOffset);
 
@@ -316,6 +313,16 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
                 // Draw labels and title
                 ctxPlot.fillText(title, margin, plot_canvas.height - margin - yOffset - graphHeight - 10);
                 ctxPlot.fillText(yLabel, 10, plot_canvas.height - margin - yOffset - graphHeight / 2);
+                
+                if (showReference) {
+                    ctxPlot.strokeStyle = 'red';
+                    ctxPlot.beginPath();
+                    const refY = plot_canvas.height - margin - yOffset - ((graphHeight * (refValue - yMin)) / (yMax - yMin));
+                    ctxPlot.moveTo(margin_left, refY);
+                    ctxPlot.lineTo(margin_left + graphWidth, refY);
+                    ctxPlot.stroke();
+                    ctxPlot.strokeStyle = 'black'; // Reset the stroke style to black for the next graph
+                }
             }
 
             const q_data_slice = q_data.slice(-n); //die letzten n werte aus dem Array
@@ -325,24 +332,15 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
             const q_last = q_data[q_data.length - 1].toFixed(0); //der letzte Wert
             const iL_last = iL_data[iL_data.length - 1].toFixed(2); //gibt den letzten Wert aus vC_Data auf zwei Stellen gerundet zurück
             const vC_last = vC_data[vC_data.length - 1].toFixed(2); 
-            const vC_min = Math.min(...vC_data);
-            const vC_max = Math.max(...vC_data);
+            const vC_min = Math.min(...vC_data, V_ref);
+            const vC_max = Math.max(...vC_data, V_ref);
 
-            function plotReferenceLine(yOffset) {
-                ctxPlot.strokeStyle = 'red'; // Farbe der Referenzlinie
-                ctxPlot.beginPath();
-                const y = plot_canvas.height - margin - yOffset - ((graphHeight * (V_ref - yMin)) / (yMax - yMin));
-                ctxPlot.moveTo(margin_left, y);
-                ctxPlot.lineTo(margin_left + graphWidth, y);
-                ctxPlot.stroke();
-                ctxPlot.strokeStyle = 'black'; // Zurücksetzen auf Standardfarbe für andere Plots
-            }
             ctxPlot.fillText(`t = ${t_total.toFixed(3)}s`, margin, plot_canvas.height - 20);
 
             plotGraph(q_data_slice, 'Schaltzustand q(t)', `${q_last}`, 0, 1, 0);
             plotGraph(iL_data_slice, 'Spulenstrom i_L(t)', `${iL_last}A`, Math.min(...iL_data), Math.max(...iL_data), graphHeight + margin);
-            plotGraph(vC_data_slice, 'Ausgangsspannung = Kondensatorspannung v_C(t)', `${vC_last}V`, Math.min(...vC_data), Math.max(...vC_data), 2 * (graphHeight + margin));
-            //plotReferenceLine(2 * (graphHeight + margin)); // Zeichnet die rote Linie für V_ref
+            plotGraph(vC_data_slice, 'Ausgangsspannung = Kondensatorspannung v_C(t)', `${vC_last}V`, vC_min, vC_max, 2 * (graphHeight + margin), showReference, V_ref);
+            
         }
 
         //------------------------solving differential-eqasion----------------------------------------
