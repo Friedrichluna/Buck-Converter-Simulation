@@ -288,18 +288,19 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
         function draw_plot() {
             const n = 1000; //amount of data beeing displayed
             ctxPlot.clearRect(0, 0, plot_canvas.width, plot_canvas.height);
-            
-           /** //const vC_last =  vC_data[vC_data.length - 1].toFixed(2);
-            const vC_min = Math.min(...vC_data);
-            const vC_max = Math.max(...vC_data);
-            */
 
             const margin = 30; //damit die Plots nicht direkt am Rand des Canvas liegen
             const margin_left = 50;
             const graphWidth = plot_canvas.width - 2 * margin_left;
             const graphHeight = (plot_canvas.height - 4 * margin) / 3;
 
+            /** //const vC_last =  vC_data[vC_data.length - 1].toFixed(2);
+            const vC_min = Math.min(...vC_data);
+            const vC_max = Math.max(...vC_data);
+            */
+
             // Helper function to plot a graph
+            //data: Array der zu plottenden Daten, title, yLabel, yMin, yMax: Minimum und Maximum der y-Achse, um die Skalierung zu definieren, yOffset: Der vertikale Versatz, der angibt, wo der Graph auf dem Canvas beginnen soll
             function plotGraph(data, title, yLabel, yMin, yMax, yOffset) {
                 ctxPlot.beginPath();
                 ctxPlot.moveTo(margin_left, plot_canvas.height - margin - yOffset);
@@ -316,16 +317,6 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
                 ctxPlot.fillText(title, margin, plot_canvas.height - margin - yOffset - graphHeight - 10);
                 ctxPlot.fillText(yLabel, 10, plot_canvas.height - margin - yOffset - graphHeight / 2);
             }
-
-            /**function plotReferenceLine(yOffset) {
-                ctxPlot.strokeStyle = 'red'; // Farbe der Referenzlinie
-                ctxPlot.beginPath();
-                const y = plot_canvas.height - margin - yOffset - ((graphHeight * (V_ref - yMin)) / (yMax - yMin));
-                ctxPlot.moveTo(margin_left, y);
-                ctxPlot.lineTo(margin_left + graphWidth, y);
-                ctxPlot.stroke();
-                ctxPlot.strokeStyle = 'black'; // Zurücksetzen auf Standardfarbe für andere Plots
-            }*/
 
             const q_data_slice = q_data.slice(-n); //die letzten n werte aus dem Array
             const iL_data_slice = iL_data.slice(-n);
@@ -620,6 +611,14 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
                 ctxCirquit.fillStyle = 'black';
                 ctxCirquit.stroke();
             }
+            drawArrow(startX,startY,endX,endY) {
+                ctxCirquit.beginPath();
+                ctxCirquit.lineWidth = 3;
+                ctxCirquit.moveTo(startX, startY);
+                ctxCirquit.lineTo(endX, endY);
+                ctxCirquit.strokeStyle = 'blue';
+                ctxCirquit.stroke();
+            }
         }
         //------------------------------------placing wires and components-----------------------------------
         //switch-branch
@@ -650,6 +649,17 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
         wire13 = new Wire(550, 50, 550, 150, true);
         wire16 = new Wire(550, 220, 550, 350, true);
         wire14 = new Wire(450, 350, 250, 350, true);
+        //arrows: first number: 1: Voltage source, 2: i_L, 3: v_C
+        arrow11 = new Component();
+        arrow12 = new Component();
+        arrow13 = new Component();
+        arrow21 = new Component();
+        arrow22 = new Component();
+        arrow23 = new Component();
+        arrow31 = new Component();
+        arrow32 = new Component();
+        arrow33 = new Component();
+
 
         //------------------------assingning voltages and currents to Wires and Components----------------------
         function drawCirquit() {
@@ -689,6 +699,23 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
 			wire12.createWire(resisitorCrt, groundVlt);
             wire16.createWire(resisitorCrt, groundVlt);
 			wire13.createWire(resisitorCrt, capacitorVlt);
+            //arrows: first number: 1: Voltage source, 2: i_L, 3: v_C
+            ctxCirquit.font = "20px Arial"; //bestimmt Schriftgröße und -art
+            ctxCirquit.fillStyle = "blue";  //Schriftfarbe     
+            arrow11.drawArrow(10,115,10,250);
+            arrow12.drawArrow(3,243,10,250);
+            arrow13.drawArrow(10,250,17,243);
+            ctxCirquit.fillText("V_in", 5, 280);
+            arrow21.drawArrow(300,25,420,25);
+            arrow22.drawArrow(413,18,420,25);
+            arrow23.drawArrow(420,25,413,32);
+            ctxCirquit.fillText("i_L", 430, 30);
+            arrow31.drawArrow(500,115,500,250);
+            arrow32.drawArrow(493,243,500,250);
+            arrow33.drawArrow(500,250,507,243);
+            ctxCirquit.fillText("v_C", 480, 280);
+
+            ctxCirquit.fillText("q(t)", 110, 75);
         }
     //===========================update simaulation, plot and animation============================
         function update() {            
