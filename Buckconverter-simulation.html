@@ -75,7 +75,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
         </div>
         <div style="margin-left: 20px;">
             <div class="input-container">
-                <button id="modeButton" class="modeButton">Switch to Manual</button>
+                <button id="modeButton" class="modeButton">Switch to ManualMode</button>
             </div>
             <div class="input-container">
                 <button id="toggleButton" class="modeButton">SwitchOn</button>
@@ -88,31 +88,31 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
             </div>
             <div class="input-container">
                 <label for="Resistor">Resistor (&Omega;):</label>
-                <input type="number" id="resistanceInput" value="10"> <!--value hardgecodet, sollte möglicht der Wert von R sein-->
+                <input type="number" id="resistanceInput" value="10"> <!--value hardgecodet, sollte möglichst der Wert von R sein-->
             </div>
             <div class="input-container">
                 <label for="InputVoltage">Input Voltage (V):</label>
-                <input type="number" id="voltageInput" value="20"> <!--value hardgecodet, sollte möglicht der Wert von V_in sein-->
+                <input type="number" id="voltageInput" value="20"> <!--value hardgecodet, sollte möglichst der Wert von V_in sein-->
             </div>
                 <div class="input-container">
                 <label for="Inductance">Inductance (mH):</label>
-                <input type="number" id="inductanceInput" value="99" > <!--value hardgecodet, sollte möglicht der Wert von L sein-->
+                <input type="number" id="inductanceInput" value="99" > <!--value hardgecodet, sollte möglichst der Wert von L sein-->
             </div> 
             <div class="input-container">
                 <label for="Capacitance">Capacitance (mF):</label>
-                <input type="number" id="capacitanceInput" value="1"> <!--value hardgecodet, sollte möglicht der Wert von C sein-->
+                <input type="number" id="capacitanceInput" value="1"> <!--value hardgecodet, sollte möglichst der Wert von C sein-->
             </div>
             <div class="input-container">
                 <label for="PeriodDuration"> Period Duration (ms):</label>
-                <input type="number" id="periodDurationInput" value ="30"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
+                <input type="number" id="periodDurationInput" value ="3"><!--value hardgecodet, sollte möglicht mit der Periodendauer im Plot übereinstimmen-->
             </div>
             <div class="input-container">
                 <label for="DutyCycle">Duty Cycle (T<sub>ein</sub>/T):</label>
-                <input type="number" id="dutyCycleInput" value ="0.5" step="0.1"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
+                <input type="number" id="dutyCycleInput" value ="0.5" step="0.1"><!--value hardgecodet, sollte möglichst der Wert von T sein-->
             </div>
             <div class="input-container">
                 <label for="referenceVoltage">Reference Voltage (V):</label>
-                <input type="number" id="referenceVoltageInput" value ="5"><!--value hardgecodet, sollte möglicht der Wert von T sein-->
+                <input type="number" id="referenceVoltageInput" value ="5"><!--value hardgecodet, sollte möglichst der Wert von T sein-->
             </div>
         </div>
     </div>
@@ -139,7 +139,6 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
         let breakSimulation = false; // Flag to break the simulation
 		let automaticMode = true; // Automatic mode flag
         let startSimulation = false;
-        //let restartSimulation =false;
 
         // Canvas setup
         const plot_canvas = document.getElementById('plot');
@@ -172,7 +171,6 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
             automaticMode = !automaticMode;
             this.textContent = automaticMode ? 'Switch to ManualMode' : 'Switch to AutomaticMode';
             this.classList.toggle('manual', !automaticMode);
-            //toggleButton.classList.toggle('manual'); //sorgt dafür, dass der toggleButton im maual-Mode auch grau wird
         });
         document.getElementById('toggleButton').addEventListener('click', function() {
             q = 1-q;
@@ -215,12 +213,15 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
             }
         });
         document.getElementById('periodDurationInput').addEventListener('input', function(e) {
-            T = Math.round(10000*parseFloat(e.target.value)*dt); //input in ms
+            T = Math.round(1e4*parseFloat(e.target.value)*dt); //input in ms
+            //T = parseFloat(e.target.value);
             console.log('T:', T);
             if (T<1 ||isNaN(T)) {
                 T=1;
                 e.target.value =T;
             }
+           // T_simulation = T*1e-3;
+            //console.log('T_simulation (s):', T_simulation);
         });
         document.getElementById('dutyCycleInput').addEventListener('input', function(e) {
             D =parseFloat(e.target.value);
@@ -233,7 +234,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
                 e.target.value =D;
             }
         });
-        document.getElementById('referenceVoltageInput').addEventListener('click', function() {
+        document.getElementById('referenceVoltageInput').addEventListener('click', function(e) {
             V_ref = parseFloat(e.target.value);
             if(V_ref<0 || isNaN(V_ref)){
                 V_ref = 0;
@@ -273,7 +274,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
             document.getElementById('resistanceInput').value = R_load;
             document.getElementById('inductanceInput').value = L*1000;// Anzeige in mH
             document.getElementById('capacitanceInput').value = C*1000;//Anzeige in mF
-            document.getElementById('periodDurationInput').value = T;
+            document.getElementById('periodDurationInput').value = T*0.1;
             document.getElementById('dutyCycleInput').value = D;
             document.getElementById('referenceVoltageInput').value = V_ref;
             

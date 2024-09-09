@@ -1,0 +1,11 @@
+- stop and restart einfügen
+- erst starten, nachdem q einmal gedrückt wurde
+- nicht crashen ;)
+
+
+- add readme
+- increase resultion
+- couple html fields with actual values
+- show more graphs (possibly with selection checkbox)
+- remake magnetic-field-animation
+- adapt animation so corners allign correctly (see resistor)
