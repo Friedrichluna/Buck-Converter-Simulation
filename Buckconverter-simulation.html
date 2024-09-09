@@ -124,6 +124,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
         let C = 1e-3; // Kapazität in Farad
         let R_load = 10; // Lastwiderstand in Ohm
         let T = 30; // Schaltperiode in dt
+        let T_simulation = 0.003; // Periodendauer im Plot
         let D = 0.5; //DutyCycle = T_ein/T
         let V_ref = 5;// Referenzspannung in Volt
         const dt = 1e-4; // Zeitschritt
@@ -213,15 +214,15 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
             }
         });
         document.getElementById('periodDurationInput').addEventListener('input', function(e) {
-            T = Math.round(1e4*parseFloat(e.target.value)*dt); //input in ms
-            //T = parseFloat(e.target.value);
+            //T = Math.round(1e4*parseFloat(e.target.value)*dt); //input in ms
+            T = parseFloat(e.target.value);
             console.log('T:', T);
             if (T<1 ||isNaN(T)) {
                 T=1;
                 e.target.value =T;
             }
-           // T_simulation = T*1e-3;
-            //console.log('T_simulation (s):', T_simulation);
+            T_simulation = T*1e-3;
+            console.log('T_simulation (s):', T_simulation);
         });
         document.getElementById('dutyCycleInput').addEventListener('input', function(e) {
             D =parseFloat(e.target.value);
@@ -256,6 +257,7 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
             R_load = 10; // Lastwiderstand in Ohm
             V_ref = 5; //Referenzspannung in Volt
             T = 30; // Schaltperiode in dt
+            T_simulation = 0.003; // Periodendauer im Plot
             D = 0.5; //DutyCycle = T_ein/T
             t_total = 0; // Gesamtzeit
 
@@ -349,9 +351,9 @@ Gleiches geht durch Drücken der entsprechenden Buttons auf der Website -->
             if (stopSimulation) return;
                 if (!breakSimulation){
                 if (automaticMode) { //switches q automatically
-                    if(pwmCounter < (D*T)){q=1;}
-                    if((D*T) < pwmCounter && pwmCounter < T){q=0;}
-                    if(pwmCounter===T){pwmCounter=0;}
+                    if(pwmCounter < (D*T_simulation/dt)){q=1;}
+                    if((D*T_simulation/dt) < pwmCounter && pwmCounter < T_simulation/dt){q=0;}
+                    if(pwmCounter===T_simulation/dt){pwmCounter=0;}
                     pwmCounter = pwmCounter+1;
                 }
 				
